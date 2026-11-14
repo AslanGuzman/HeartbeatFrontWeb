@@ -1,0 +1,32 @@
+﻿@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="/" aria-label="Heartbeat, inicio del control de misión">
+            <span class="brand-mark" aria-hidden="true">H</span>
+            <span class="brand-copy">
+                <strong>Heartbeat</strong>
+                <span>Control de misión</span>
+            </span>
+        </a>
+
+        <NavMenu />
+    </aside>
+
+    <div class="workspace">
+        <header class="topbar">
+            <span>Control de misión</span>
+            <span class="topbar-context">Salud de la tripulación</span>
+        </header>
+
+        <main class="main-content">
+            @Body
+        </main>
+    </div>
+
+    <div id="blazor-error-ui" data-nosnippet>
+        Ocurrió un error inesperado.
+        <a href="." class="reload">Recargar</a>
+        <span class="dismiss">Cerrar</span>
+    </div>
+</div>
