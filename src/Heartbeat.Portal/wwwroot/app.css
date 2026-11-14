@@ -1,0 +1,259 @@
+:root {
+    color-scheme: dark;
+    font-family: "Segoe UI", sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+
+    --background: #0B1220;
+    --surface: #121B2E;
+    --surface-raised: #1A2540;
+    --border: #2A3757;
+    --text-primary: #E8EEF9;
+    --text-secondary: #A3B3CF;
+    --accent: #4DA3FF;
+
+    /* Match HeartbeatFrontDesktop; reserve health colors for health states. */
+    --status-normal: #34C759;
+    --status-watch: #FFB020;
+    --status-critical: #FF4D4F;
+    --on-status: #0B1220;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--text-primary);
+}
+
+a {
+    color: inherit;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.app-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 16rem minmax(0, 1fr);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+}
+
+.brand-mark {
+    display: grid;
+    width: 2.5rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--accent);
+    border-radius: 0.75rem;
+    color: var(--accent);
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.brand-copy {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.brand-copy strong {
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+}
+
+.brand-copy span,
+.topbar-context {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.primary-navigation ul {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.primary-navigation a {
+    display: block;
+    padding: 0.7rem 0.8rem;
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.primary-navigation a:hover,
+.primary-navigation a.active {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+.primary-navigation a.active {
+    box-shadow: inset 3px 0 var(--accent);
+}
+
+.workspace {
+    min-width: 0;
+}
+
+.topbar {
+    min-height: 4.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 2rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.logout-button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: var(--surface-raised);
+}
+
+.session-check {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    background: #181818;
+    color: #e2ddff;
+    font-size: 0.9rem;
+}
+
+.session-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(196 186 255 / 35%);
+    border-top-color: #c4baff;
+    border-radius: 50%;
+    animation: session-spinner-turn 700ms linear infinite;
+}
+
+@keyframes session-spinner-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.main-content {
+    width: min(100%, 90rem);
+    margin-inline: auto;
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.welcome {
+    max-width: 42rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.welcome h1 {
+    margin: 0;
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.welcome-copy {
+    max-width: 36rem;
+    margin: 0.8rem 0 0;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.status-normal {
+    color: var(--status-normal);
+}
+
+.status-watch {
+    color: var(--status-watch);
+}
+
+.status-critical {
+    color: var(--status-critical);
+}
+
+@media (max-width: 48rem) {
+    .app-shell {
+        grid-template-columns: minmax(0, 1fr);
+        align-content: start;
+    }
+
+    .sidebar {
+        min-height: auto;
+        gap: 1rem;
+        padding: 0.9rem 1rem 0.6rem;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .primary-navigation ul {
+        display: flex;
+        gap: 0.25rem;
+        overflow-x: auto;
+    }
+
+    .primary-navigation a {
+        white-space: nowrap;
+    }
+
+    .topbar {
+        min-height: 3.5rem;
+        padding-inline: 1rem;
+    }
+
+    .topbar-context {
+        display: none;
+    }
+
+    .main-content {
+        padding: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .session-spinner {
+        animation: none;
+    }
+}

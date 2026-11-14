@@ -1,0 +1,20 @@
+#blazor-error-ui {
+    color-scheme: dark;
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    bottom: 0;
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.9rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 1rem;
+    top: 0.9rem;
+}

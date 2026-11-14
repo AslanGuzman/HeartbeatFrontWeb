@@ -1,0 +1,4 @@
+[submodule "external/HeartbeatBackend"]
+	path = external/HeartbeatBackend
+	url = https://github.com/AliaJimenez/HeartbeatBackend.git
+	branch = dev
