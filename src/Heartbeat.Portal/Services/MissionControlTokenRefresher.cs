@@ -6,7 +6,8 @@ namespace Heartbeat.Portal.Services;
 
 public sealed class MissionControlTokenRefresher(
     HttpClient httpClient,
-    MissionControlSession session)
+    MissionControlSession session,
+    IMissionControlSessionStore sessionStore)
 {
     private static readonly TimeSpan RefreshWindow = TimeSpan.FromMinutes(1);
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
@@ -27,14 +28,22 @@ public sealed class MissionControlTokenRefresher(
             var refreshToken = session.RefreshToken;
             if (string.IsNullOrWhiteSpace(refreshToken))
             {
-                return session.AccessTokenExpiresAt is { } expiresAt && expiresAt > now
-                    ? session.AccessToken
-                    : null;
+                if (session.AccessTokenExpiresAt is { } expiresAt && expiresAt > now)
+                {
+                    return session.AccessToken;
+                }
+
+                if (session.AccessToken is not null)
+                {
+                    await ClearSessionAsync(cancellationToken);
+                }
+
+                return null;
             }
 
             if (session.RefreshTokenExpiresAt is { } refreshExpiresAt && refreshExpiresAt <= now)
             {
-                session.Clear();
+                await ClearSessionAsync(cancellationToken);
                 return null;
             }
 
@@ -43,9 +52,11 @@ public sealed class MissionControlTokenRefresher(
                 new RefreshRequest(refreshToken),
                 cancellationToken);
 
-            if (response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+            if (response.StatusCode is HttpStatusCode.BadRequest or
+                HttpStatusCode.Unauthorized or
+                HttpStatusCode.Forbidden)
             {
-                session.Clear();
+                await ClearSessionAsync(cancellationToken);
                 return null;
             }
 
@@ -54,9 +65,10 @@ public sealed class MissionControlTokenRefresher(
                 cancellationToken: cancellationToken);
 
             if (tokens is null || string.IsNullOrWhiteSpace(tokens.AccessToken) ||
-                tokens.AccessTokenExpiresAt <= now)
+                tokens.AccessTokenExpiresAt <= now || tokens.RefreshTokenExpiresAt is { } nextRefreshExpiresAt &&
+                nextRefreshExpiresAt <= now)
             {
-                session.Clear();
+                await ClearSessionAsync(cancellationToken);
                 throw new InvalidDataException("The Mission Control API returned an invalid token response.");
             }
 
@@ -68,6 +80,29 @@ public sealed class MissionControlTokenRefresher(
                 tokens.AccessTokenExpiresAt,
                 nextRefreshToken,
                 tokens.RefreshTokenExpiresAt ?? session.RefreshTokenExpiresAt);
+            await sessionStore.SaveAsync(cancellationToken);
+
+            using var meRequest = new HttpRequestMessage(HttpMethod.Get, "me");
+            meRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer",
+                tokens.AccessToken);
+            using var meResponse = await httpClient.SendAsync(meRequest, cancellationToken);
+            if (meResponse.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await ClearSessionAsync(cancellationToken);
+                return null;
+            }
+
+            meResponse.EnsureSuccessStatusCode();
+            var user = await meResponse.Content.ReadFromJsonAsync<PortalUserDto>(
+                cancellationToken: cancellationToken);
+            if (user is null || !user.IsActive)
+            {
+                await ClearSessionAsync(cancellationToken);
+                return null;
+            }
+
+            session.SetUser(user);
 
             return tokens.AccessToken;
         }
@@ -75,5 +110,11 @@ public sealed class MissionControlTokenRefresher(
         {
             _refreshLock.Release();
         }
+    }
+
+    public async Task ClearSessionAsync(CancellationToken cancellationToken = default)
+    {
+        session.Clear(expired: true);
+        await sessionStore.ClearAsync(cancellationToken);
     }
 }

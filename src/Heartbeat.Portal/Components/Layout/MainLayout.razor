@@ -1,32 +1,118 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject MissionControlSession Session
+@inject MissionControlAuthentication Authentication
+@inject NavigationManager Navigation
 
-<div class="app-shell">
-    <aside class="sidebar">
-        <a class="brand" href="/" aria-label="Heartbeat, inicio del control de misión">
-            <span class="brand-mark" aria-hidden="true">H</span>
-            <span class="brand-copy">
-                <strong>Heartbeat</strong>
+@if (_ready && Session.User is { IsActive: true } user)
+{
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="/" aria-label="Heartbeat, inicio del control de misión">
+                <span class="brand-mark" aria-hidden="true">H</span>
+                <span class="brand-copy">
+                    <strong>Heartbeat</strong>
+                    <span>Control de misión</span>
+                </span>
+            </a>
+
+            <NavMenu />
+        </aside>
+
+        <div class="workspace">
+            <header class="topbar">
                 <span>Control de misión</span>
-            </span>
-        </a>
+                <span class="topbar-context">@user.DisplayName</span>
+                <button class="logout-button" type="button" @onclick="LogoutAsync">Cerrar sesión</button>
+            </header>
 
-        <NavMenu />
-    </aside>
+            <main class="main-content">
+                @Body
+            </main>
+        </div>
 
-    <div class="workspace">
-        <header class="topbar">
-            <span>Control de misión</span>
-            <span class="topbar-context">Salud de la tripulación</span>
-        </header>
-
-        <main class="main-content">
-            @Body
-        </main>
+        <div id="blazor-error-ui" data-nosnippet>
+            Ocurrió un error inesperado.
+            <a href="." class="reload">Recargar</a>
+            <span class="dismiss">Cerrar</span>
+        </div>
     </div>
+}
+else
+{
+    <main class="session-check" aria-live="polite" aria-busy="@(!_ready)">
+        <span class="session-spinner" aria-hidden="true"></span>
+        <span>Verificando sesión…</span>
+    </main>
+}
 
-    <div id="blazor-error-ui" data-nosnippet>
-        Ocurrió un error inesperado.
-        <a href="." class="reload">Recargar</a>
-        <span class="dismiss">Cerrar</span>
-    </div>
-</div>
+@code {
+    private bool _ready;
+    private bool _loggingOut;
+    private bool _restoreFailed;
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            await Authentication.RestoreAsync();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                Microsoft.JSInterop.JSException or
+                InvalidDataException or
+                System.Text.Json.JsonException or
+                TaskCanceledException)
+        {
+            _restoreFailed = true;
+        }
+        finally
+        {
+            _ready = true;
+            StateHasChanged();
+        }
+
+        if (Session.User is null)
+        {
+            var expired = _restoreFailed
+                ? "?connection=true"
+                : Session.SessionExpired ? "?expired=true" : string.Empty;
+            Navigation.NavigateTo($"/login{expired}", replace: true);
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        _loggingOut = true;
+        await Authentication.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true, replace: true);
+    }
+
+    private void OnSessionChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+            if (_ready && !_loggingOut && Session.User is null)
+            {
+                var expired = Session.SessionExpired ? "?expired=true" : string.Empty;
+                Navigation.NavigateTo($"/login{expired}", replace: true);
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+    }
+}

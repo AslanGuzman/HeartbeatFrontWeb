@@ -134,6 +134,46 @@ button:focus-visible {
     font-size: 0.9rem;
 }
 
+.logout-button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: var(--surface-raised);
+}
+
+.session-check {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    background: #181818;
+    color: #e2ddff;
+    font-size: 0.9rem;
+}
+
+.session-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(196 186 255 / 35%);
+    border-top-color: #c4baff;
+    border-radius: 50%;
+    animation: session-spinner-turn 700ms linear infinite;
+}
+
+@keyframes session-spinner-turn {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .main-content {
     width: min(100%, 90rem);
     margin-inline: auto;
@@ -203,7 +243,17 @@ button:focus-visible {
         padding-inline: 1rem;
     }
 
+    .topbar-context {
+        display: none;
+    }
+
     .main-content {
         padding: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .session-spinner {
+        animation: none;
     }
 }
