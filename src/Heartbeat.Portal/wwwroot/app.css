@@ -1,16 +1,18 @@
 :root {
-    color-scheme: dark;
+    color-scheme: light;
     font-family: "Segoe UI", sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
 
-    --background: #0B1220;
-    --surface: #121B2E;
-    --surface-raised: #1A2540;
-    --border: #2A3757;
-    --text-primary: #E8EEF9;
-    --text-secondary: #A3B3CF;
-    --accent: #4DA3FF;
+    --brand-blue: #110559;
+    --brand-red: #990E0E;
+    --background: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-raised: #F4F3F8;
+    --border: #DDD9E9;
+    --text-primary: var(--brand-blue);
+    --text-secondary: #5E5A70;
+    --accent: var(--brand-blue);
 
     /* Match HeartbeatFrontDesktop; reserve health colors for health states. */
     --status-normal: #34C759;
@@ -53,8 +55,8 @@ button:focus-visible {
     gap: 2.5rem;
     min-height: 100vh;
     padding: 1.5rem 1rem;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
+    background: var(--brand-blue);
+    border-right: 1px solid rgb(255 255 255 / 16%);
 }
 
 .brand {
@@ -70,9 +72,9 @@ button:focus-visible {
     width: 2.5rem;
     aspect-ratio: 1;
     place-items: center;
-    border: 1px solid var(--accent);
+    border: 1px solid rgb(255 255 255 / 55%);
     border-radius: 0.75rem;
-    color: var(--accent);
+    color: #FFFFFF;
     font-size: 1.3rem;
     font-weight: 700;
 }
@@ -87,10 +89,18 @@ button:focus-visible {
     letter-spacing: 0.01em;
 }
 
+.sidebar .brand-copy strong {
+    color: #FFFFFF;
+}
+
 .brand-copy span,
 .topbar-context {
     color: var(--text-secondary);
     font-size: 0.8rem;
+}
+
+.sidebar .brand-copy span {
+    color: rgb(255 255 255 / 78%);
 }
 
 .primary-navigation ul {
@@ -105,18 +115,22 @@ button:focus-visible {
     display: block;
     padding: 0.7rem 0.8rem;
     border-radius: 0.5rem;
-    color: var(--text-secondary);
+    color: rgb(255 255 255 / 78%);
     text-decoration: none;
 }
 
 .primary-navigation a:hover,
 .primary-navigation a.active {
-    background: var(--surface-raised);
-    color: var(--text-primary);
+    background: rgb(255 255 255 / 12%);
+    color: #FFFFFF;
 }
 
 .primary-navigation a.active {
-    box-shadow: inset 3px 0 var(--accent);
+    box-shadow: inset 3px 0 #FFFFFF;
+}
+
+.sidebar a:focus-visible {
+    outline-color: #FFFFFF;
 }
 
 .workspace {
@@ -132,6 +146,46 @@ button:focus-visible {
     padding: 0.75rem 2rem;
     border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
+}
+
+.logout-button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    background: var(--surface-raised);
+}
+
+.session-check {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.session-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(17 5 89 / 22%);
+    border-top-color: var(--brand-blue);
+    border-radius: 50%;
+    animation: session-spinner-turn 700ms linear infinite;
+}
+
+@keyframes session-spinner-turn {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .main-content {
@@ -203,7 +257,17 @@ button:focus-visible {
         padding-inline: 1rem;
     }
 
+    .topbar-context {
+        display: none;
+    }
+
     .main-content {
         padding: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .session-spinner {
+        animation: none;
     }
 }

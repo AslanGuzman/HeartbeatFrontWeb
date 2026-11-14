@@ -1,0 +1,222 @@
+@page "/login"
+@layout AuthLayout
+@using System.ComponentModel.DataAnnotations
+@inject MissionControlAuthentication Authentication
+@inject NavigationManager Navigation
+
+<PageTitle>Heartbeat | Iniciar sesión</PageTitle>
+
+<main class="login-page">
+    <div class="login-canvas">
+        <div class="login-card">
+            <section class="login-story" aria-label="Heartbeat">
+                <div class="brand-lockup">
+                    <div class="heartbeat-brand">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 21s-8.7-5.3-10.5-10.2C-.2 3.6 7.1.2 12 6.1 16.9.2 24.2 3.6 22.5 10.8 20.7 15.7 12 21 12 21Z" />
+                        </svg>
+                        <span>Heartbeat</span>
+                    </div>
+                    <p>Tu salud, incluso sin señal.</p>
+                </div>
+
+                <section class="monitor" aria-label="Monitor cardíaco simulado">
+                    <div class="monitor-heading">
+                        <span>HEART RATE MONITOR</span>
+                        <span class="live-indicator"><i aria-hidden="true"></i> LIVE SIMULATION</span>
+                    </div>
+                    <svg class="ecg" viewBox="0 0 280 90" preserveAspectRatio="none" role="img"
+                         aria-label="Animación de una señal cardíaca simulada">
+                        <defs>
+                            <filter id="ecg-glow">
+                                <feGaussianBlur stdDeviation="3.2" result="blur" />
+                                <feMerge>
+                                    <feMergeNode in="blur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+                        <g class="ecg-track">
+                            <path d="M0 47 H34 L44 46 H68 L82 47 L96 47 L112 13 L128 80 L144 33 L160 47 H204 L218 47 L230 46 H252 L266 47 L280 47" />
+                            <path transform="translate(280 0)" d="M0 47 H34 L44 46 H68 L82 47 L96 47 L112 13 L128 80 L144 33 L160 47 H204 L218 47 L230 46 H252 L266 47 L280 47" />
+                        </g>
+                    </svg>
+                    <div class="monitor-footer">
+                        <span>MONITOREO CARDÍACO</span>
+                        <span class="bpm"><span aria-hidden="true">♥</span> 72 BPM</span>
+                    </div>
+                </section>
+
+                <div class="mission-copy">
+                    <h2>Tu misión es importante.</h2>
+                    <p>
+                        Monitorea tus signos vitales, registra tus chequeos y cuida de tu salud
+                        durante toda la misión espacial.
+                    </p>
+                </div>
+            </section>
+
+            <section class="login-panel" aria-labelledby="login-title">
+                <div class="login-content">
+                    <header class="login-heading">
+                        <h1 id="login-title">Bienvenido de vuelta</h1>
+                        <p>Accede a tu perfil de Heartbeat.</p>
+                    </header>
+
+                    @if (Expired)
+                    {
+                        <p class="session-notice" role="status">Tu sesión expiró. Inicia sesión para continuar.</p>
+                    }
+                    else if (Connection)
+                    {
+                        <p class="session-notice" role="status">No se pudo conectar con Mission Control. Inténtalo de nuevo.</p>
+                    }
+
+                    <EditForm Model="_form" OnValidSubmit="SubmitAsync" class="login-form">
+                        <DataAnnotationsValidator />
+                        <div class="form-field">
+                            <label for="username">USUARIO</label>
+                            <InputText id="username"
+                                       @bind-Value="_form.UserName"
+                                       autocomplete="username"
+                                       spellcheck="false"
+                                       disabled="@_submitting"
+                                       aria-label="Usuario" />
+                            <ValidationMessage For="@(() => _form.UserName)" />
+                        </div>
+
+                        <div class="form-field">
+                            <label for="password">CONTRASEÑA</label>
+                            <InputText id="password"
+                                       type="password"
+                                       @bind-Value="_form.Password"
+                                       autocomplete="current-password"
+                                       disabled="@_submitting"
+                                       aria-label="Contraseña" />
+                            <ValidationMessage For="@(() => _form.Password)" />
+                        </div>
+
+                        @if (_error is not null)
+                        {
+                            <p class="login-error" role="alert">@_error</p>
+                        }
+
+                        <button class="login-submit" type="submit" disabled="@(_submitting || _initializing)">
+                            @if (_submitting)
+                            {
+                                <span class="button-spinner" aria-hidden="true"></span>
+                                <span>Entrando…</span>
+                            }
+                            else if (_initializing)
+                            {
+                                <span>Verificando sesión…</span>
+                            }
+                            else
+                            {
+                                <span>Entrar <span aria-hidden="true">→</span></span>
+                            }
+                        </button>
+                    </EditForm>
+
+                    <aside class="demo-access" aria-labelledby="demo-title">
+                        <h2 id="demo-title">Accesos de demostración</h2>
+                        <p>Usa una cuenta activa de Control de misión.</p>
+                        <p>Las cuentas y credenciales dependen del entorno de desarrollo.</p>
+                        <p>Las cuentas de tripulación inician sesión en su aplicación.</p>
+                    </aside>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+@code {
+    [SupplyParameterFromQuery(Name = "expired")]
+    public bool Expired { get; set; }
+
+    [SupplyParameterFromQuery(Name = "connection")]
+    public bool Connection { get; set; }
+
+    private readonly LoginForm _form = new();
+    private bool _initializing = true;
+    private bool _submitting;
+    private string? _error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        try
+        {
+            if (await Authentication.RestoreAsync())
+            {
+                Navigation.NavigateTo("/", replace: true);
+                return;
+            }
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                Microsoft.JSInterop.JSException or
+                InvalidDataException or
+                System.Text.Json.JsonException or
+                TaskCanceledException)
+        {
+            _error = "No se pudo comprobar la sesión. Inténtalo de nuevo.";
+        }
+        finally
+        {
+            _initializing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_submitting || _initializing)
+        {
+            return;
+        }
+
+        _submitting = true;
+        _error = null;
+        try
+        {
+            var result = await Authentication.LoginAsync(_form.UserName.Trim(), _form.Password);
+            switch (result)
+            {
+                case MissionControlLoginResult.Success:
+                    _form.Password = string.Empty;
+                    Navigation.NavigateTo("/", replace: true);
+                    break;
+                case MissionControlLoginResult.InvalidCredentials:
+                    _error = "El usuario o la contraseña no son correctos.";
+                    break;
+                case MissionControlLoginResult.InactiveAccount:
+                    _error = "Esta cuenta no está activa o ya no tiene acceso.";
+                    break;
+                case MissionControlLoginResult.Forbidden:
+                    _error = "Tu cuenta no tiene permiso para acceder al portal.";
+                    break;
+                default:
+                    _error = "No se pudo conectar con Mission Control. Inténtalo de nuevo.";
+                    break;
+            }
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private sealed class LoginForm
+    {
+        [Required(ErrorMessage = "Escribe tu usuario.")]
+        public string UserName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Escribe tu contraseña.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}
