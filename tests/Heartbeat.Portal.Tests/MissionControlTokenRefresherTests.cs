@@ -22,18 +22,32 @@ public sealed class MissionControlTokenRefresherTests
             [Permissions.CrewView]);
 
         var refreshCalls = 0;
+        var meCalls = 0;
         using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
         {
-            refreshCalls++;
-            Assert.AreEqual("/api/mc/v1/auth/refresh", request.RequestUri?.AbsolutePath);
+            if (request.RequestUri?.AbsolutePath.EndsWith("/auth/refresh", StringComparison.Ordinal) == true)
+            {
+                refreshCalls++;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(
+                        new TokenResponse(
+                            "new-access-token",
+                            now.AddHours(1),
+                            "rotated-refresh-token",
+                            now.AddDays(1)),
+                        options: new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                });
+            }
+
+            meCalls++;
+            Assert.AreEqual("/api/mc/v1/me", request.RequestUri?.AbsolutePath);
+            Assert.AreEqual("Bearer", request.Headers.Authorization?.Scheme);
+            Assert.AreEqual("new-access-token", request.Headers.Authorization?.Parameter);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = JsonContent.Create(
-                    new TokenResponse(
-                        "new-access-token",
-                        now.AddHours(1),
-                        "rotated-refresh-token",
-                        now.AddDays(1)),
+                    User([Permissions.AlertsView]),
                     options: new JsonSerializerOptions(JsonSerializerDefaults.Web))
             });
         }))
@@ -41,13 +55,17 @@ public sealed class MissionControlTokenRefresherTests
             BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
         };
 
-        var refresher = new MissionControlTokenRefresher(httpClient, session);
+        var store = new StubSessionStore();
+        var refresher = new MissionControlTokenRefresher(httpClient, session, store);
         var accessToken = await refresher.GetAccessTokenAsync();
 
         Assert.AreEqual("new-access-token", accessToken);
         Assert.AreEqual("rotated-refresh-token", session.RefreshToken);
-        Assert.IsTrue(session.HasPermission(Permissions.CrewView));
+        Assert.IsFalse(session.HasPermission(Permissions.CrewView));
+        Assert.IsTrue(session.HasPermission(Permissions.AlertsView));
         Assert.AreEqual(1, refreshCalls);
+        Assert.AreEqual(1, meCalls);
+        Assert.AreEqual(1, store.SaveCalls);
     }
 
     [TestMethod]
@@ -64,13 +82,45 @@ public sealed class MissionControlTokenRefresherTests
 
         using var httpClient = new HttpClient(new StubHttpMessageHandler((_, _) =>
             throw new AssertFailedException("An expired refresh token must not be sent.")));
-        var refresher = new MissionControlTokenRefresher(httpClient, session);
+        var store = new StubSessionStore();
+        var refresher = new MissionControlTokenRefresher(httpClient, session, store);
 
         var accessToken = await refresher.GetAccessTokenAsync();
 
         Assert.IsNull(accessToken);
         Assert.IsNull(session.AccessToken);
         Assert.IsFalse(session.HasPermission(Permissions.CrewView));
+        Assert.IsTrue(session.SessionExpired);
+        Assert.AreEqual(1, store.ClearCalls);
+    }
+
+    private static PortalUserDto User(IReadOnlyList<string> permissions) => new(
+        Guid.NewGuid(),
+        "pilot",
+        "pilot@heartbeat.test",
+        "Pilot",
+        new RoleDto(Guid.NewGuid(), "Flight Surgeon", true, 1, permissions),
+        true,
+        permissions);
+
+    private sealed class StubSessionStore : IMissionControlSessionStore
+    {
+        public int SaveCalls { get; private set; }
+        public int ClearCalls { get; private set; }
+
+        public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task SaveAsync(CancellationToken cancellationToken = default)
+        {
+            SaveCalls++;
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+        {
+            ClearCalls++;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class StubHttpMessageHandler(
