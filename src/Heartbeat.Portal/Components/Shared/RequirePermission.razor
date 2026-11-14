@@ -1,0 +1,37 @@
+@implements IDisposable
+@inject MissionControlSession Session
+
+@if (Session.HasPermission(Permission))
+{
+    @ChildContent
+}
+else if (NotAuthorized is not null)
+{
+    @NotAuthorized
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string Permission { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? NotAuthorized { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+    }
+
+    private void OnSessionChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+    }
+}

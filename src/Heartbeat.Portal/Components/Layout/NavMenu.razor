@@ -1,0 +1,34 @@
+<nav class="primary-navigation" aria-label="Navegación principal">
+    <ul>
+        <li>
+            <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/crew" Match="NavLinkMatch.Prefix">Tripulación</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.VitalsHistory">
+                <NavLink href="/charts" Match="NavLinkMatch.Prefix">Tendencias</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.AlertsView">
+                <NavLink href="/alerts" Match="NavLinkMatch.Prefix">Alertas</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.MessagesView">
+                <NavLink href="/messages" Match="NavLinkMatch.Prefix">Mensajes</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.UsersView">
+                <NavLink href="/users" Match="NavLinkMatch.Prefix">Usuarios</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.RolesManage">
+                <NavLink href="/roles" Match="NavLinkMatch.Prefix">Roles y permisos</NavLink>
+            </RequirePermission>
+        </li>
+    </ul>
+</nav>

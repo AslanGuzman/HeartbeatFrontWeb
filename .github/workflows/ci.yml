@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet restore HeartbeatFrontWeb.sln
+      - run: dotnet build HeartbeatFrontWeb.sln --no-restore
+      - run: dotnet test HeartbeatFrontWeb.sln --no-build
