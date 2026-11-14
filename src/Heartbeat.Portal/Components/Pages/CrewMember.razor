@@ -1,0 +1,141 @@
+@page "/crew/{AstronautId:guid}"
+@using System.Net
+@using System.Text.Json
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Perfil del astronauta</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <ChildContent>
+        @if (_loading)
+        {
+            <div class="crew-member-state" role="status" aria-busy="true">
+                <span class="session-spinner" aria-hidden="true"></span>
+                <span>Cargando perfil…</span>
+            </div>
+        }
+        else if (_forbidden)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>Sin permiso para ver este perfil</h1>
+                <p>Tu cuenta no tiene el permiso necesario.</p>
+            </div>
+        }
+        else if (_notFound)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>Perfil no disponible</h1>
+                <p>No se encontró este astronauta.</p>
+                <a href="/crew">Volver a la tripulación</a>
+            </div>
+        }
+        else if (_error is not null)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>No se pudo cargar el perfil</h1>
+                <p>@_error</p>
+                <button class="crew-member-retry" type="button" @onclick="LoadProfileAsync">Reintentar</button>
+            </div>
+        }
+        else if (_astronaut is not null)
+        {
+            <section class="crew-member-page" aria-labelledby="astronaut-name">
+                <a class="crew-member-back" href="/crew">Volver a la tripulación</a>
+
+                <article class="crew-member-card">
+                    <header class="crew-member-heading">
+                        <span class="crew-member-avatar" aria-hidden="true">@Initial(_astronaut.DisplayName)</span>
+                        <div>
+                            <h1 id="astronaut-name">@_astronaut.DisplayName</h1>
+                            <p>@(_astronaut.CallSign ?? "Sin indicativo")</p>
+                        </div>
+                    </header>
+
+                    <dl class="crew-member-details">
+                        <div>
+                            <dt>Misión</dt>
+                            <dd>@_astronaut.Mission.Name</dd>
+                        </div>
+                        <div>
+                            <dt>Entorno</dt>
+                            <dd>@_astronaut.Mission.Environment</dd>
+                        </div>
+                        <div>
+                            <dt>Perfil actualizado</dt>
+                            <dd>@FormatTimestamp(_astronaut.UpdatedAt)</dd>
+                        </div>
+                    </dl>
+                </article>
+            </section>
+        }
+    </ChildContent>
+    <NotAuthorized>
+        <div class="crew-member-state" role="alert">
+            <h1>Sin permiso para ver este perfil</h1>
+            <p>Tu cuenta no tiene el permiso necesario.</p>
+        </div>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    [Parameter]
+    public Guid AstronautId { get; set; }
+
+    private AstronautProfile? _astronaut;
+    private bool _loading = true;
+    private bool _forbidden;
+    private bool _notFound;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Session.HasPermission(Permissions.CrewView))
+        {
+            await LoadProfileAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        _loading = true;
+        _forbidden = false;
+        _notFound = false;
+        _error = null;
+
+        try
+        {
+            _astronaut = await Client.GetCrewMemberAsync(AstronautId);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _notFound = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _error = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string Initial(string displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
+
+    private static string FormatTimestamp(DateTimeOffset timestamp) =>
+        timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+}

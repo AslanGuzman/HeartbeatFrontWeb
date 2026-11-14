@@ -1,0 +1,204 @@
+@page "/"
+@page "/crew"
+@using System.Net
+@using System.Text.Json
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Tripulación</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <ChildContent>
+        <section class="crew-dashboard" aria-labelledby="crew-title">
+            <header class="crew-heading">
+                <div>
+                    <h1 id="crew-title">Tripulación</h1>
+                    <p>Estado de salud y actividad de cada astronauta.</p>
+                </div>
+                @if (!_loading && !_forbidden && _error is null)
+                {
+                    <span class="crew-count">@CrewCountLabel</span>
+                }
+            </header>
+
+            @if (_loading)
+            {
+                <div class="crew-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando tripulación…</span>
+                </div>
+            }
+            else if (_forbidden)
+            {
+                <div class="crew-state" role="alert">
+                    <h2>Sin permiso para ver la tripulación</h2>
+                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="crew-state" role="alert">
+                    <h2>No se pudo cargar la tripulación</h2>
+                    <p>@_error</p>
+                    <button class="crew-retry" type="button" @onclick="LoadCrewAsync">Reintentar</button>
+                </div>
+            }
+            else
+            {
+                <section class="crew-summary" aria-label="Resumen de tripulación">
+                    <div>
+                        <span>Astronautas</span>
+                        <strong>@_crew.Length</strong>
+                    </div>
+                    <div>
+                        <span>Alertas abiertas</span>
+                        <strong>@OpenAlertCount</strong>
+                    </div>
+                    <div>
+                        <span>Mensajes sin leer</span>
+                        <strong>@UnreadMessageCount</strong>
+                    </div>
+                </section>
+
+                @if (_crew.Length == 0)
+                {
+                    <div class="crew-state crew-empty">
+                        <h2>No hay astronautas registrados</h2>
+                        <p>La tripulación aparecerá aquí cuando se agreguen cuentas.</p>
+                    </div>
+                }
+                else
+                {
+                    <section class="crew-roster" aria-labelledby="crew-roster-title">
+                        <header class="crew-roster-heading">
+                            <h2 id="crew-roster-title">Estado individual</h2>
+                            <p>Selecciona una tarjeta para abrir el perfil.</p>
+                        </header>
+
+                        <div class="crew-grid">
+                            @foreach (var astronaut in _crew)
+                            {
+                                <a @key="astronaut.AstronautId"
+                                   class="crew-card crew-card--@StatusKey(astronaut.OverallStatus)"
+                                   href="@($"/crew/{astronaut.AstronautId:D}")"
+                                   aria-label="@($"Abrir perfil de {astronaut.DisplayName}")">
+                                    <div class="crew-card-heading">
+                                        <span class="crew-avatar" aria-hidden="true">@Initial(astronaut.DisplayName)</span>
+                                        <span class="crew-identity">
+                                            <strong>@astronaut.DisplayName</strong>
+                                            <span>@(astronaut.CallSign ?? "Sin indicativo")</span>
+                                        </span>
+                                        <span class="crew-status crew-status--@StatusKey(astronaut.OverallStatus)">
+                                            <span aria-hidden="true"></span>
+                                            @StatusLabel(astronaut.OverallStatus)
+                                        </span>
+                                    </div>
+
+                                    <dl class="crew-metrics">
+                                        <div>
+                                            <dt>Último chequeo</dt>
+                                            <dd>@FormatTimestamp(astronaut.LastCheckUpAt)</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Última sincronización</dt>
+                                            <dd>@FormatTimestamp(astronaut.LastSyncAt)</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Alertas abiertas</dt>
+                                            <dd>@astronaut.OpenAlerts</dd>
+                                        </div>
+                                        <div>
+                                            <dt>Mensajes sin leer</dt>
+                                            <dd>@astronaut.UnreadMessages</dd>
+                                        </div>
+                                    </dl>
+
+                                    <span class="crew-card-action">Ver detalle</span>
+                                </a>
+                            }
+                        </div>
+                    </section>
+                }
+            }
+        </section>
+    </ChildContent>
+    <NotAuthorized>
+        <div class="crew-state" role="alert">
+            <h2>Sin permiso para ver la tripulación</h2>
+            <p>Tu cuenta no tiene el permiso necesario.</p>
+        </div>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    private CrewSummaryDto[] _crew = [];
+    private bool _loading = true;
+    private bool _forbidden;
+    private string? _error;
+
+    private string CrewCountLabel => $"{_crew.Length} {(_crew.Length == 1 ? "astronauta" : "astronautas")}";
+    private int OpenAlertCount => _crew.Sum(astronaut => astronaut.OpenAlerts);
+    private int UnreadMessageCount => _crew.Sum(astronaut => astronaut.UnreadMessages);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.HasPermission(Permissions.CrewView))
+        {
+            await LoadCrewAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadCrewAsync()
+    {
+        _loading = true;
+        _forbidden = false;
+        _error = null;
+
+        try
+        {
+            _crew = await Client.GetCrewAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _error = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string StatusKey(HealthStatus? status) => status switch
+    {
+        HealthStatus.Normal => "normal",
+        HealthStatus.Watch => "watch",
+        HealthStatus.Critical => "critical",
+        _ => "unknown"
+    };
+
+    private static string StatusLabel(HealthStatus? status) => status switch
+    {
+        HealthStatus.Normal => "Normal",
+        HealthStatus.Watch => "En observación",
+        HealthStatus.Critical => "Crítico",
+        _ => "Sin lecturas"
+    };
+
+    private static string Initial(string displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
+
+    private static string FormatTimestamp(DateTimeOffset? timestamp) =>
+        timestamp?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Sin registro";
+}
