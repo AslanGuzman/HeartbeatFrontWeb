@@ -1,0 +1,124 @@
+.crew-member-page {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.crew-member-back {
+    width: fit-content;
+    color: var(--brand-blue);
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.crew-member-back:hover {
+    text-decoration: underline;
+}
+
+.crew-member-card {
+    max-width: 48rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: var(--surface);
+}
+
+.crew-member-heading {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.crew-member-avatar {
+    flex: none;
+    width: 4rem;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 1rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.crew-member-heading h1,
+.crew-member-heading p {
+    margin: 0;
+}
+
+.crew-member-heading h1 {
+    color: var(--brand-blue);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+}
+
+.crew-member-heading p {
+    margin-top: 0.35rem;
+    color: var(--text-secondary);
+}
+
+.crew-member-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 1rem;
+    margin: 1.25rem 0 0;
+}
+
+.crew-member-details dt {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.crew-member-details dd {
+    margin: 0.25rem 0 0;
+    color: var(--brand-blue);
+    font-weight: 650;
+}
+
+.crew-member-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.crew-member-state h1,
+.crew-member-state p {
+    margin: 0;
+}
+
+.crew-member-state h1 {
+    color: var(--brand-blue);
+    font-size: 1.2rem;
+}
+
+.crew-member-state p {
+    color: var(--text-secondary);
+}
+
+.crew-member-state[aria-busy="true"] {
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+}
+
+.crew-member-state a {
+    color: var(--brand-blue);
+    font-weight: 650;
+}
+
+.crew-member-retry {
+    margin-top: 0.35rem;
+    padding: 0.55rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
