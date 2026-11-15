@@ -104,6 +104,33 @@ public sealed class MissionControlClient(
             $"crew/{astronautId:D}/checkups/{checkUpId:D}",
             cancellationToken);
 
+    public Task<SeriesDto> GetSeriesAsync(
+        Guid astronautId,
+        IndicatorType indicator,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>
+        {
+            $"indicator={Uri.EscapeDataString(JsonNamingPolicy.CamelCase.ConvertName(indicator.ToString()))}"
+        };
+
+        if (from is not null)
+        {
+            query.Add($"from={Uri.EscapeDataString(from.Value.ToString("O", CultureInfo.InvariantCulture))}");
+        }
+
+        if (to is not null)
+        {
+            query.Add($"to={Uri.EscapeDataString(to.Value.ToString("O", CultureInfo.InvariantCulture))}");
+        }
+
+        return GetAsync<SeriesDto>(
+            $"crew/{astronautId:D}/series?{string.Join("&", query)}",
+            cancellationToken);
+    }
+
     public Task<JsonDocument> GetReferenceRangesAsync(CancellationToken cancellationToken = default) =>
         GetAsync<JsonDocument>("reference-ranges", cancellationToken);
 
