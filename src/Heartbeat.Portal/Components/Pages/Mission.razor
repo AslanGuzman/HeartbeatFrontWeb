@@ -1,0 +1,231 @@
+@page "/mission"
+@using System.Net
+@using System.Text.Json
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Misión</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <ChildContent>
+        <section class="mission-dashboard" aria-labelledby="mission-title">
+            <header class="mission-heading">
+                <div>
+                    <h1 id="mission-title">Vista de misión</h1>
+                    <p>Entorno de la misión y semáforo de peligros de la tripulación.</p>
+                </div>
+                <span class="mission-simulated">Datos simulados</span>
+            </header>
+
+            @if (_loading)
+            {
+                <div class="mission-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando datos de la misión…</span>
+                </div>
+            }
+            else if (_forbidden)
+            {
+                <div class="mission-state" role="alert">
+                    <h2>Sin permiso para ver la misión</h2>
+                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="mission-state" role="alert">
+                    <h2>No se pudo cargar la misión</h2>
+                    <p>@_error</p>
+                    <button class="mission-retry" type="button" @onclick="LoadAsync">Reintentar</button>
+                </div>
+            }
+            else if (_mission is not null)
+            {
+                <section class="mission-profile" aria-label="Perfil de entorno">
+                    <header>
+                        <div>
+                            <span class="mission-eyebrow">PERFIL DE ENTORNO</span>
+                            <h2>@_mission.Name</h2>
+                        </div>
+                        <span class="mission-environment">@EnvironmentLabel(_mission.EnvironmentProfile.Type)</span>
+                    </header>
+                    <dl class="mission-metrics">
+                        <div><dt>Distancia a la Tierra</dt><dd>@DistanceLabel</dd></div>
+                        <div><dt>Retardo unidireccional</dt><dd>@DelayLabel</dd></div>
+                        <div><dt>Gravedad</dt><dd>@($"{_mission.EnvironmentProfile.GravityG:0.##} g")</dd></div>
+                        <div><dt>Tripulación</dt><dd>@_mission.EnvironmentProfile.CrewSize</dd></div>
+                    </dl>
+                    @if (_mission.Indices is { } indices)
+                    {
+                        <div class="mission-indices">
+                            <span>Aislamiento: <strong>@indices.Isolation.Label</strong></span>
+                            <span>Confinamiento: <strong>@indices.Confinement.Label</strong></span>
+                            <small>Índices heurísticos · Datos simulados</small>
+                        </div>
+                    }
+                </section>
+
+                @if (_crew.Length == 0)
+                {
+                    <div class="mission-state mission-empty">
+                        <h2>Tripulación sin registros</h2>
+                        <p>No hay astronautas registrados en la misión.</p>
+                    </div>
+                }
+                else
+                {
+                    <section class="mission-roster" aria-labelledby="mission-roster-title">
+                        <header>
+                            <h2 id="mission-roster-title">Semáforo de la tripulación</h2>
+                            <p>Estados y explicaciones por peligro · No es un diagnóstico.</p>
+                        </header>
+                        <div class="mission-crew">
+                            @foreach (var astronaut in _crew)
+                            {
+                                var risk = _risks.GetValueOrDefault(astronaut.AstronautId);
+                                <article class="mission-astronaut">
+                                    <header>
+                                        <div>
+                                            <h3>@astronaut.DisplayName</h3>
+                                            <span>@(astronaut.CallSign ?? "Sin indicativo")</span>
+                                        </div>
+                                        @if (risk is not null)
+                                        {
+                                            <span class="mission-status mission-status--@StatusKey(risk.Status)">
+                                                <span aria-hidden="true"></span>@StatusLabel(risk.Status)
+                                            </span>
+                                        }
+                                    </header>
+                                    @if (risk is null)
+                                    {
+                                        <p class="mission-no-risk">Semáforo no disponible.</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="mission-explanation">@risk.Explanation</p>
+                                        <ul class="mission-hazards">
+                                            @foreach (var hazard in risk.Hazards)
+                                            {
+                                                <li class="mission-hazard">
+                                                    <span class="mission-hazard-status mission-status--@StatusKey(hazard.Status)">
+                                                        <span aria-hidden="true"></span>@StatusLabel(hazard.Status)
+                                                    </span>
+                                                    <div>
+                                                        <strong>@HazardLabel(hazard.Hazard)</strong>
+                                                        <p>@hazard.Explanation</p>
+                                                    </div>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+            }
+        </section>
+    </ChildContent>
+    <NotAuthorized>
+        <div class="mission-state" role="alert">
+            <h2>Sin permiso para ver la misión</h2>
+            <p>Tu cuenta no tiene el permiso necesario.</p>
+        </div>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    private MissionProfileResponse? _mission;
+    private CrewSummaryDto[] _crew = [];
+    private Dictionary<Guid, RiskStatusResponse> _risks = [];
+    private bool _loading = true;
+    private bool _forbidden;
+    private string? _error;
+
+    private string DistanceLabel => _mission is null
+        ? "—"
+        : _mission.EnvironmentProfile.DistanceKm >= 1_000_000
+            ? $"{_mission.EnvironmentProfile.DistanceKm / 1_000_000m:0.##} millones km"
+            : $"{_mission.EnvironmentProfile.DistanceKm:0.##} km";
+
+    private string DelayLabel => _mission is null
+        ? "—"
+        : _mission.CommunicationDelaySeconds < 60
+            ? $"{_mission.CommunicationDelaySeconds:0.##} s"
+            : $"{_mission.CommunicationDelaySeconds / 60:0.##} min";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.HasPermission(Permissions.CrewView))
+            await LoadAsync();
+        else
+            _loading = false;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _forbidden = false;
+        _error = null;
+        try
+        {
+            var missionTask = Client.GetMissionAsync();
+            var crewTask = Client.GetCrewAsync();
+            await Task.WhenAll(missionTask, crewTask);
+            _mission = await missionTask;
+            _crew = await crewTask;
+            var risks = await Task.WhenAll(_crew.Select(async astronaut =>
+                (astronaut.AstronautId, Risk: await Client.GetCrewRiskAsync(astronaut.AstronautId))));
+            _risks = risks.ToDictionary(item => item.AstronautId, item => item.Risk);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or InvalidDataException or TaskCanceledException)
+        {
+            _error = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string EnvironmentLabel(string environment) => environment switch
+    {
+        "station" => "Estación",
+        "spacecraft" => "Nave espacial",
+        "rover" => "Vehículo explorador",
+        "lunarBase" => "Base lunar",
+        "marsBase" => "Base en Marte",
+        _ => environment
+    };
+
+    private static string HazardLabel(Hazard hazard) => hazard switch
+    {
+        Hazard.SpaceRadiation => "Radiación espacial",
+        Hazard.IsolationAndConfinement => "Aislamiento y confinamiento",
+        Hazard.DistanceFromEarth => "Distancia a la Tierra",
+        Hazard.GravityFields => "Campos de gravedad",
+        Hazard.HostileClosedEnvironment => "Entorno cerrado hostil",
+        _ => hazard.ToString()
+    };
+
+    private static string StatusKey(HealthStatus status) => status switch
+    {
+        HealthStatus.Normal => "normal",
+        HealthStatus.Watch => "watch",
+        HealthStatus.Critical => "critical",
+        _ => "unknown"
+    };
+
+    private static string StatusLabel(HealthStatus status) => status switch
+    {
+        HealthStatus.Normal => "Normal",
+        HealthStatus.Watch => "En observación",
+        HealthStatus.Critical => "Crítico",
+        _ => "Sin datos"
+    };
+}

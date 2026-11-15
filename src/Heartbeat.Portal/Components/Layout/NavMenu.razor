@@ -6,6 +6,11 @@
     <ul>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/mission" Match="NavLinkMatch.Prefix">Misión</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.CrewView">
                 <NavLink href="/crew" Match="NavLinkMatch.Prefix">Crew</NavLink>
             </RequirePermission>
         </li>

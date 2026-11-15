@@ -1,0 +1,265 @@
+.mission-dashboard {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.mission-heading,
+.mission-profile > header,
+.mission-astronaut > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.mission-heading h1 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    letter-spacing: -0.025em;
+}
+
+.mission-heading p,
+.mission-roster > header p {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.mission-simulated,
+.mission-environment {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--brand-blue);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.mission-profile,
+.mission-astronaut,
+.mission-state {
+    padding: 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.mission-profile {
+    display: grid;
+    gap: 1.1rem;
+}
+
+.mission-eyebrow {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.mission-profile h2,
+.mission-roster h2,
+.mission-astronaut h3 {
+    margin: 0.25rem 0 0;
+    color: var(--brand-blue);
+}
+
+.mission-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin: 0;
+}
+
+.mission-metrics > div {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.9rem;
+    border-radius: 0.65rem;
+    background: var(--surface-raised);
+}
+
+.mission-metrics dt,
+.mission-astronaut header div > span {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.mission-metrics dd {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.mission-indices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem 1.2rem;
+    align-items: center;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.mission-indices small {
+    color: var(--text-secondary);
+}
+
+.mission-roster {
+    display: grid;
+    gap: 1rem;
+}
+
+.mission-roster > header h2 {
+    font-size: 1.25rem;
+}
+
+.mission-roster > header p {
+    font-size: 0.85rem;
+}
+
+.mission-crew {
+    display: grid;
+    gap: 1rem;
+}
+
+.mission-astronaut {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.mission-astronaut h3 {
+    font-size: 1rem;
+}
+
+.mission-status {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.mission-status > span,
+.mission-hazard-status > span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.mission-status--normal {
+    background: #EAF6ED;
+    color: #165D2D;
+}
+
+.mission-status--watch {
+    background: #FFF3D4;
+    color: #704900;
+}
+
+.mission-status--critical {
+    background: #FCEAEA;
+    color: var(--brand-red);
+}
+
+.mission-explanation,
+.mission-hazard p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.mission-hazards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mission-hazard {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+}
+
+.mission-hazard-status {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.1rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.mission-hazard-status > span {
+    width: 0.4rem;
+    height: 0.4rem;
+}
+
+.mission-hazard strong {
+    color: var(--text-primary);
+    font-size: 0.82rem;
+}
+
+.mission-hazard p {
+    margin-top: 0.25rem;
+}
+
+.mission-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.45rem;
+}
+
+.mission-state h2,
+.mission-state p {
+    margin: 0;
+}
+
+.mission-state h2 {
+    color: var(--brand-blue);
+    font-size: 1.1rem;
+}
+
+.mission-state p,
+.mission-no-risk {
+    color: var(--text-secondary);
+}
+
+.mission-retry {
+    margin-top: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+@media (max-width: 42rem) {
+    .mission-heading,
+    .mission-profile > header,
+    .mission-astronaut > header {
+        align-items: flex-start;
+    }
+
+    .mission-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

@@ -51,6 +51,14 @@ public sealed class MissionControlClient(
     public Task<CrewSummaryDto[]> GetCrewAsync(CancellationToken cancellationToken = default) =>
         GetAsync<CrewSummaryDto[]>("crew", cancellationToken);
 
+    public Task<MissionProfileResponse> GetMissionAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<MissionProfileResponse>("mission", cancellationToken);
+
+    public Task<RiskStatusResponse> GetCrewRiskAsync(
+        Guid astronautId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<RiskStatusResponse>($"crew/{astronautId:D}/risk", cancellationToken);
+
     public Task<AstronautProfile> GetCrewMemberAsync(
         Guid astronautId,
         CancellationToken cancellationToken = default) =>
