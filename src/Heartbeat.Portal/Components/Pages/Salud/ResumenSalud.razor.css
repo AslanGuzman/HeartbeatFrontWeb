@@ -1,0 +1,138 @@
+.salud-page {
+    display: grid;
+    gap: 1rem;
+}
+
+.salud-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.salud-heading h1 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: clamp(1.8rem, 4vw, 2.3rem);
+    letter-spacing: -0.025em;
+}
+
+.salud-heading p {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.salud-page h2 {
+    margin: 0.75rem 0 0;
+    color: var(--brand-blue);
+    font-size: 1.15rem;
+}
+
+.salud-button {
+    min-height: 2.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--brand-blue);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.salud-button:disabled {
+    cursor: progress;
+    opacity: 0.6;
+}
+
+.salud-state {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text-secondary);
+}
+
+.salud-error {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    border-radius: 0.5rem;
+    background: #FDECEC;
+    color: var(--brand-red);
+    font-weight: 650;
+}
+
+.salud-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: 0.75rem;
+}
+
+.salud-card {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--surface);
+}
+
+.salud-card h3 {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 650;
+}
+
+.salud-card-value {
+    margin: 0.4rem 0;
+    color: var(--brand-blue);
+    font-size: 1.6rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.salud-card-meta {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.salud-steps,
+.salud-sleep,
+.salud-stages,
+.salud-empty {
+    margin: 0;
+}
+
+.salud-stages,
+.salud-empty {
+    color: var(--text-secondary);
+}
+
+.salud-table-wrap {
+    overflow-x: auto;
+}
+
+.salud-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.salud-table th,
+.salud-table td {
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.salud-table th {
+    color: var(--text-secondary);
+    font-weight: 650;
+}
+
+.salud-disclaimer {
+    margin: 1rem 0 0;
+    color: var(--text-primary);
+    font-weight: 650;
+}

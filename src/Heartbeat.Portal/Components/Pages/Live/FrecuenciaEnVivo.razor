@@ -1,0 +1,207 @@
+@page "/fc-en-vivo"
+@implements IAsyncDisposable
+@using System.Globalization
+@using Heartbeat.Portal.Live
+@using Heartbeat.Portal.Salud
+@using Microsoft.AspNetCore.SignalR.Client
+@inject MissionControlClient Client
+@inject IConfiguration Configuration
+
+@* La página es interactiva: App.razor renderiza todas las rutas con @rendermode="InteractiveServer". *@
+
+<PageTitle>Heartbeat | FC en vivo</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <section class="live-page" aria-labelledby="live-title">
+        <header class="live-heading">
+            <h1 id="live-title">Frecuencia cardíaca en vivo</h1>
+            <p>Galaxy Watch 5 · una lectura por segundo mientras la app del reloj está en pantalla.</p>
+        </header>
+
+        <div class="live-card">
+            <div class="live-value" aria-live="polite">
+                <span class="live-bpm">@(_latest?.Bpm.ToString(CultureInfo.CurrentCulture) ?? "--")</span>
+                <span class="live-unit">lpm</span>
+            </div>
+            <div class="live-meta">
+                <span>@(_latest is null ? "Sin lecturas todavía" : $"Medida a las {_latest.MeasuredAt.ToLocalTime():HH:mm:ss}")</span>
+                <span class="live-status @StatusClass">@StatusText</span>
+            </div>
+
+            @if (IsStale && _hub?.State == HubConnectionState.Connected)
+            {
+                <div class="live-warning" role="alert">
+                    Sin datos del reloj: abre la app en el reloj y mantén la pantalla encendida
+                </div>
+            }
+            @if (_error is not null)
+            {
+                <p class="live-error" role="alert">@_error</p>
+            }
+
+            <svg class="live-chart" viewBox="0 0 @ChartWidth @ChartHeight" preserveAspectRatio="none"
+                 role="img" aria-label="Últimas lecturas de frecuencia cardíaca">
+                <polyline points="@ChartPoints()" />
+            </svg>
+            <p class="live-chart-caption">Últimas @_readings.Count lecturas (máximo @MaxReadings)</p>
+        </div>
+    </section>
+</RequirePermission>
+
+@code {
+    private const int MaxReadings = 300;
+    private const int ChartWidth = 600;
+    private const int ChartHeight = 200;
+    private static readonly TimeSpan StaleAfter = TimeSpan.FromSeconds(10);
+
+    private readonly List<HeartRateReading> _readings = new();
+    private readonly CancellationTokenSource _cts = new();
+    private HubConnection? _hub;
+    private PeriodicTimer? _timer;
+    private HeartRateReading? _latest;
+    private DateTimeOffset? _lastDataAt;
+    private string _connection = "conectando…";
+    private string? _error;
+
+    private bool IsStale => _lastDataAt is null || DateTimeOffset.Now - _lastDataAt.Value > StaleAfter;
+
+    private string StatusText => _hub?.State == HubConnectionState.Connected && IsStale ? "sin datos hace más de 10 s" : _connection;
+
+    private string StatusClass => StatusText switch
+    {
+        "en vivo" => "is-live",
+        "sin datos hace más de 10 s" => "is-stale",
+        _ => "is-pending",
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var history = await Client.GetSaludAsync<List<HeartRateReading>>("/api/heartrate/recent?seconds=300", _cts.Token);
+        if (history.Data is { Count: > 0 } readings)
+        {
+            _readings.AddRange(readings.TakeLast(MaxReadings));
+            _latest = _readings[^1];
+            _lastDataAt = _latest.MeasuredAt;
+        }
+        else if (history.Error is not null)
+        {
+            _error = $"No se pudo cargar el historial: {history.Error}";
+        }
+
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = TickAsync(_timer);
+        _ = ConnectAsync();
+    }
+
+    private async Task ConnectAsync()
+    {
+        _hub = new HubConnectionBuilder()
+            .WithUrl(new Uri(BackendAddress.Root(Configuration), "hubs/heartrate"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hub.On<HeartRateReading>("HeartRate", reading => InvokeAsync(() =>
+        {
+            _readings.Add(reading);
+            if (_readings.Count > MaxReadings)
+            {
+                _readings.RemoveRange(0, _readings.Count - MaxReadings);
+            }
+
+            _latest = reading;
+            _lastDataAt = DateTimeOffset.Now;
+            StateHasChanged();
+        }));
+        _hub.Reconnecting += _ => SetConnectionAsync("reconectando…");
+        _hub.Reconnected += _ => SetConnectionAsync("en vivo");
+        _hub.Closed += ex => SetConnectionAsync(ex is null ? "desconectado" : $"desconectado: {ex.Message}");
+
+        // WithAutomaticReconnect solo reintenta conexiones ya establecidas: el primer arranque se reintenta aquí.
+        while (!_cts.IsCancellationRequested)
+        {
+            try
+            {
+                await _hub.StartAsync(_cts.Token);
+                await SetConnectionAsync("en vivo");
+                return;
+            }
+            catch (OperationCanceledException) when (_cts.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                await SetConnectionAsync($"sin conexión con el backend ({ex.Message}); reintentando…");
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), _cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
+    private Task SetConnectionAsync(string state) => InvokeAsync(() =>
+    {
+        _connection = state;
+        StateHasChanged();
+    });
+
+    // Refresca el estado cada segundo para que aparezca el aviso de "sin datos" aunque no lleguen lecturas.
+    private async Task TickAsync(PeriodicTimer timer)
+    {
+        try
+        {
+            while (await timer.WaitForNextTickAsync(_cts.Token))
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private string ChartPoints()
+    {
+        if (_readings.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var min = _readings.Min(r => r.Bpm) - 5;
+        var max = _readings.Max(r => r.Bpm) + 5;
+        double range = Math.Max(1, max - min);
+        double step = (double)ChartWidth / (MaxReadings - 1);
+        double offset = ChartWidth - ((_readings.Count - 1) * step); // las más recientes quedan a la derecha
+        return string.Join(' ', _readings.Select((r, i) => string.Create(
+            CultureInfo.InvariantCulture,
+            $"{offset + (i * step):0.#},{ChartHeight - ((r.Bpm - min) / range * ChartHeight):0.#}")));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _cts.CancelAsync();
+        _timer?.Dispose();
+        if (_hub is not null)
+        {
+            try
+            {
+                await _hub.DisposeAsync();
+            }
+            catch (Exception)
+            {
+                // El circuito ya se cierra: un fallo al cerrar la conexión no debe propagarse.
+            }
+        }
+
+        _cts.Dispose();
+    }
+}
