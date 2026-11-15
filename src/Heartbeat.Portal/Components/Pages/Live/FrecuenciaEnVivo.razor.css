@@ -20,8 +20,9 @@
     gap: 0.9rem;
     padding: 1.5rem;
     border: 1px solid var(--border);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .live-value {
@@ -55,7 +56,7 @@
 }
 
 .live-status.is-live {
-    color: #1E8E3E;
+    color: var(--status-normal-text);
 }
 
 .live-status.is-stale {
@@ -71,7 +72,7 @@
     margin: 0;
     padding: 0.7rem 0.9rem;
     border-radius: 0.5rem;
-    background: #FDECEC;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
     font-weight: 650;
 }
