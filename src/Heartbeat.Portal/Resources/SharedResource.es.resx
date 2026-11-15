@@ -79,4 +79,10 @@
   <data name="Mission Control portal" xml:space="preserve"><value>Portal de Control de misión</value></data>
   <data name="Monitoring prototype — not a substitute for a real medical diagnosis" xml:space="preserve"><value>Prototipo de monitoreo — no sustituye un diagnóstico médico real</value></data>
   <data name="Heartbeat, Mission Control home" xml:space="preserve"><value>Heartbeat, inicio del control de misión</value></data>
+  <data name="Export CSV" xml:space="preserve"><value>Exportar CSV</value></data>
+  <data name="Exporting…" xml:space="preserve"><value>Exportando…</value></data>
+  <data name="Simulated data. Not a medical diagnosis." xml:space="preserve"><value>Datos simulados. No es un diagnóstico médico.</value></data>
+  <data name="You do not have permission to export reports." xml:space="preserve"><value>No tienes permiso para exportar reportes.</value></data>
+  <data name="The report was not found." xml:space="preserve"><value>No se encontró el reporte.</value></data>
+  <data name="Could not download the report. Try again." xml:space="preserve"><value>No se pudo descargar el reporte. Inténtalo de nuevo.</value></data>
 </root>

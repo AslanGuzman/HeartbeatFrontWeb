@@ -76,3 +76,6 @@ public sealed record ProfileIndicatorResponse(
 
 // Min <= value < Max
 public sealed record ProfileBandResponse(HealthStatus Status, decimal? Min, decimal? Max);
+
+// A CSV report returned by the export endpoints (CONTRACTS.md, HB-BE-10).
+public sealed record CsvDownload(byte[] Content, string FileName);

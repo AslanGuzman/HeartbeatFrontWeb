@@ -52,12 +52,15 @@
                         <h1 id="astronaut-name">@_astronaut.DisplayName</h1>
                         <p>@(_astronaut.CallSign ?? "No call sign") · @_astronaut.Mission.Name</p>
                     </div>
-                    @if (_status is not null)
-                    {
-                        <span class="health-chip health-chip--@StatusKey(_status.OverallStatus)">
-                            @StatusLabel(_status.OverallStatus)
-                        </span>
-                    }
+                    <div class="astronaut-actions">
+                        <ExportCsvButton AstronautId="AstronautId" />
+                        @if (_status is not null)
+                        {
+                            <span class="health-chip health-chip--@StatusKey(_status.OverallStatus)">
+                                @StatusLabel(_status.OverallStatus)
+                            </span>
+                        }
+                    </div>
                 </header>
 
                 <section class="astronaut-profile" aria-label="Astronaut information">

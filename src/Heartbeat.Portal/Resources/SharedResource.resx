@@ -79,4 +79,10 @@
   <data name="Mission Control portal" xml:space="preserve"><value>Mission Control portal</value></data>
   <data name="Monitoring prototype — not a substitute for a real medical diagnosis" xml:space="preserve"><value>Monitoring prototype — not a substitute for a real medical diagnosis</value></data>
   <data name="Heartbeat, Mission Control home" xml:space="preserve"><value>Heartbeat, Mission Control home</value></data>
+  <data name="Export CSV" xml:space="preserve"><value>Export CSV</value></data>
+  <data name="Exporting…" xml:space="preserve"><value>Exporting…</value></data>
+  <data name="Simulated data. Not a medical diagnosis." xml:space="preserve"><value>Simulated data. Not a medical diagnosis.</value></data>
+  <data name="You do not have permission to export reports." xml:space="preserve"><value>You do not have permission to export reports.</value></data>
+  <data name="The report was not found." xml:space="preserve"><value>The report was not found.</value></data>
+  <data name="Could not download the report. Try again." xml:space="preserve"><value>Could not download the report. Try again.</value></data>
 </root>

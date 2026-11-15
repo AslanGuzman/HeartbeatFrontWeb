@@ -407,6 +407,39 @@ public sealed class MissionControlClientTests
     }
 
     [TestMethod]
+    public async Task CsvExportsUseTheContractRoutesAndReadTheServerFileName()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var uris = new List<string>();
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            uris.Add(request.RequestUri!.PathAndQuery);
+            var content = new ByteArrayContent([0xEF, 0xBB, 0xBF, 0x61]);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
+            content.Headers.ContentDisposition =
+                new System.Net.Http.Headers.ContentDispositionHeaderValue("attachment") { FileName = "heartbeat-x.csv" };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var client = new MissionControlClient(
+            httpClient, new MissionControlTokenRefresher(httpClient, session, new StubSessionStore()));
+        var astronautId = Guid.NewGuid();
+        var missionId = Guid.NewGuid();
+
+        var astronaut = await client.ExportAstronautCsvAsync(astronautId);
+        var mission = await client.ExportMissionCsvAsync(missionId);
+
+        Assert.AreEqual($"/api/mc/v1/crew/{astronautId:D}/export.csv", uris[0]);
+        Assert.AreEqual($"/api/mc/v1/mission/export.csv?missionId={missionId:D}", uris[1]);
+        Assert.AreEqual("heartbeat-x.csv", astronaut.FileName);
+        Assert.HasCount(4, mission.Content);
+    }
+
+    [TestMethod]
     public async Task MessageEndpointsListSendAndMarkMessagesRead()
     {
         var now = DateTimeOffset.UtcNow;
