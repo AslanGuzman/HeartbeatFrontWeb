@@ -1,0 +1,31 @@
+.export-csv {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.export-csv-button {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--brand-blue);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.export-csv-button:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.export-csv small {
+    color: var(--text-secondary);
+}
+
+.export-csv-error {
+    flex-basis: 100%;
+    color: var(--brand-red);
+    font-size: 0.85rem;
+}

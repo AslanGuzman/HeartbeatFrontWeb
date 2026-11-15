@@ -15,7 +15,13 @@
                     <h1 id="mission-title">Vista de misión</h1>
                     <p>Entorno de la misión y semáforo de peligros de la tripulación.</p>
                 </div>
-                <span class="mission-simulated">Datos simulados</span>
+                <div class="mission-actions">
+                    @if (_mission is not null)
+                    {
+                        <ExportCsvButton MissionId="_mission.Id" />
+                    }
+                    <span class="mission-simulated">Datos simulados</span>
+                </div>
             </header>
 
             @if (_loading)

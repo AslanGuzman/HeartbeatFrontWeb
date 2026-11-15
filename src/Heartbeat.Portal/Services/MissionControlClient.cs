@@ -407,6 +407,35 @@ public sealed class MissionControlClient(
         response.EnsureSuccessStatusCode();
     }
 
+    public Task<CsvDownload> ExportAstronautCsvAsync(
+        Guid astronautId,
+        CancellationToken cancellationToken = default) =>
+        DownloadCsvAsync($"crew/{astronautId:D}/export.csv", $"heartbeat-{astronautId:D}.csv", cancellationToken);
+
+    public Task<CsvDownload> ExportMissionCsvAsync(
+        Guid? missionId = null,
+        CancellationToken cancellationToken = default) =>
+        DownloadCsvAsync(
+            missionId is { } id ? $"mission/export.csv?missionId={id:D}" : "mission/export.csv",
+            "heartbeat-mission.csv",
+            cancellationToken);
+
+    private async Task<CsvDownload> DownloadCsvAsync(
+        string uri,
+        string fallbackFileName,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+        using var response = await SendAsync(request, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+
+        var disposition = response.Content.Headers.ContentDisposition;
+        var fileName = disposition?.FileNameStar ?? disposition?.FileName?.Trim('"');
+        return new CsvDownload(
+            await response.Content.ReadAsByteArrayAsync(cancellationToken),
+            string.IsNullOrWhiteSpace(fileName) ? fallbackFileName : fileName);
+    }
+
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
         where T : class
     {
