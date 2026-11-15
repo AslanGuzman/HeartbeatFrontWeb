@@ -3,6 +3,7 @@
 @inject MissionControlSession Session
 @inject MissionControlAuthentication Authentication
 @inject NavigationManager Navigation
+@inject IStringLocalizer<SharedResource> T
 
 @if (_ready && Session.User is { IsActive: true } user)
 {
@@ -22,11 +23,12 @@
         <div class="workspace">
             <header class="topbar">
                 <div class="topbar-title">
-                    <span>Mission Control</span>
-                    <span class="simulated-data-badge">Simulated data</span>
+                    <span>@T["Mission Control"]</span>
+                    <span class="simulated-data-badge">@T["Simulated data"]</span>
                 </div>
+                <LanguageSelector />
                 <span class="topbar-context">@user.DisplayName</span>
-                <button class="logout-button" type="button" @onclick="LogoutAsync">Sign out</button>
+                <button class="logout-button" type="button" @onclick="LogoutAsync">@T["Sign out"]</button>
             </header>
 
             <main class="main-content">
@@ -35,9 +37,9 @@
         </div>
 
         <div id="blazor-error-ui" data-nosnippet>
-            An unexpected error occurred.
-            <a href="." class="reload">Recargar</a>
-            <span class="dismiss">Close</span>
+            @T["An unexpected error occurred."]
+            <a href="." class="reload">@T["Reload"]</a>
+            <span class="dismiss">@T["Close"]</span>
         </div>
     </div>
 }
@@ -45,7 +47,7 @@ else
 {
     <main class="session-check" aria-live="polite" aria-busy="@(!_ready)">
         <span class="session-spinner" aria-hidden="true"></span>
-        <span>Checking session…</span>
+        <span>@T["Checking session…"]</span>
     </main>
 }
 

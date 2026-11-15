@@ -3,8 +3,9 @@
 @using System.ComponentModel.DataAnnotations
 @inject MissionControlAuthentication Authentication
 @inject NavigationManager Navigation
+@inject IStringLocalizer<SharedResource> T
 
-<PageTitle>Heartbeat | Sign in</PageTitle>
+<PageTitle>Heartbeat | @T["Sign in"]</PageTitle>
 
 <main class="login-page">
     <div class="login-canvas">
@@ -17,7 +18,7 @@
                         </svg>
                         <span>Heartbeat</span>
                     </div>
-                    <p>Your health, even off the grid.</p>
+                    <p>@T["Your health, even off the grid."]</p>
                 </div>
 
                 <section class="monitor" aria-label="Simulated heart rate monitor">
@@ -26,7 +27,7 @@
                         <span class="live-indicator"><i aria-hidden="true"></i> LIVE SIMULATION</span>
                     </div>
                     <svg class="ecg" viewBox="0 0 280 90" preserveAspectRatio="none" role="img"
-                         aria-label="Animated simulated heart rate signal">
+                         aria-label="@T["Animated simulated heart rate signal"]">
                         <defs>
                             <filter id="ecg-glow">
                                 <feGaussianBlur stdDeviation="3.2" result="blur" />
@@ -48,10 +49,9 @@
                 </section>
 
                 <div class="mission-copy">
-                    <h2>Your mission matters.</h2>
+                    <h2>@T["Your mission matters."]</h2>
                     <p>
-                        Track your vital signs, record your checkups, and take care of your health
-                        throughout your space mission.
+                        @T["Track your vital signs, record your checkups, and take care of your health throughout your space mission."]
                     </p>
                 </div>
             </section>
@@ -59,40 +59,41 @@
             <section class="login-panel" aria-labelledby="login-title">
                 <div class="login-content">
                     <header class="login-heading">
-                        <h1 id="login-title">Welcome back</h1>
-                        <p>Sign in to your Heartbeat account.</p>
+                        <LanguageSelector />
+                        <h1 id="login-title">@T["Welcome back"]</h1>
+                        <p>@T["Sign in to your Heartbeat account."]</p>
                     </header>
 
                     @if (Expired)
                     {
-                        <p class="session-notice" role="status">Your session expired. Sign in to continue.</p>
+                        <p class="session-notice" role="status">@T["Your session expired. Sign in to continue."]</p>
                     }
                     else if (Connection)
                     {
-                        <p class="session-notice" role="status">Could not connect to Mission Control. Please try again.</p>
+                        <p class="session-notice" role="status">@T["Could not connect to Mission Control. Please try again."]</p>
                     }
 
                     <EditForm Model="_form" OnValidSubmit="SubmitAsync" class="login-form">
                         <DataAnnotationsValidator />
                         <div class="form-field">
-                            <label for="username">USERNAME</label>
+                            <label for="username">@T["USERNAME"]</label>
                             <InputText id="username"
                                        @bind-Value="_form.UserName"
                                        autocomplete="username"
                                        spellcheck="false"
                                        disabled="@_submitting"
-                                       aria-label="Username" />
+                                        aria-label="@T["Username field"]" />
                             <ValidationMessage For="@(() => _form.UserName)" />
                         </div>
 
                         <div class="form-field">
-                            <label for="password">PASSWORD</label>
+                            <label for="password">@T["PASSWORD"]</label>
                             <InputText id="password"
                                        type="password"
                                        @bind-Value="_form.Password"
                                        autocomplete="current-password"
                                        disabled="@_submitting"
-                                       aria-label="Password" />
+                                        aria-label="@T["Password field"]" />
                             <ValidationMessage For="@(() => _form.Password)" />
                         </div>
 
@@ -105,24 +106,24 @@
                             @if (_submitting)
                             {
                                 <span class="button-spinner" aria-hidden="true"></span>
-                                <span>Signing in…</span>
+                                <span>@T["Signing in…"]</span>
                             }
                             else if (_initializing)
                             {
-                                <span>Checking session…</span>
+                                <span>@T["Checking session…"]</span>
                             }
                             else
                             {
-                                <span>Sign in <span aria-hidden="true">→</span></span>
+                                <span>@T["Sign in"] <span aria-hidden="true">→</span></span>
                             }
                         </button>
                     </EditForm>
 
                     <aside class="demo-access" aria-labelledby="demo-title">
-                        <h2 id="demo-title">Demo access</h2>
-                        <p>Usa una cuenta activa de Mission Control.</p>
-                        <p>Demo accounts and credentials depend on the development environment.</p>
-                        <p>Crew accounts sign in through their own app.</p>
+                        <h2 id="demo-title">@T["Demo access"]</h2>
+                        <p>@T["Use an active Mission Control account."]</p>
+                        <p>@T["Demo accounts and credentials depend on the development environment."]</p>
+                        <p>@T["Crew accounts sign in through their own app."]</p>
                     </aside>
                 </div>
             </section>
@@ -164,7 +165,7 @@
                 System.Text.Json.JsonException or
                 TaskCanceledException)
         {
-            _error = "Could not verify your session. Please try again.";
+            _error = T["Could not verify your session. Please try again."];
         }
         finally
         {
@@ -192,16 +193,16 @@
                     Navigation.NavigateTo("/", replace: true);
                     break;
                 case MissionControlLoginResult.InvalidCredentials:
-                    _error = "The username or password is incorrect.";
+                    _error = T["The username or password is incorrect."];
                     break;
                 case MissionControlLoginResult.InactiveAccount:
-                    _error = "This account is inactive or no longer has access.";
+                    _error = T["This account is inactive or no longer has access."];
                     break;
                 case MissionControlLoginResult.Forbidden:
-                    _error = "Your account does not have permission to access the portal.";
+                    _error = T["Your account does not have permission to access the portal."];
                     break;
                 default:
-                    _error = "Could not connect to Mission Control. Please try again.";
+                    _error = T["Could not connect to Mission Control. Please try again."];
                     break;
             }
         }

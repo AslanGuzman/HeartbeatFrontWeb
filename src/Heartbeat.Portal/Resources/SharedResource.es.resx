@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Language" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Mission Control" xml:space="preserve"><value>Control de misión</value></data>
+  <data name="Simulated data" xml:space="preserve"><value>Datos simulados</value></data>
+  <data name="Sign out" xml:space="preserve"><value>Cerrar sesión</value></data>
+  <data name="Main navigation" xml:space="preserve"><value>Navegación principal</value></data>
+  <data name="Mission" xml:space="preserve"><value>Misión</value></data>
+  <data name="Phantoms" xml:space="preserve"><value>Fantasmas</value></data>
+  <data name="Crew" xml:space="preserve"><value>Tripulación</value></data>
+  <data name="Trends" xml:space="preserve"><value>Tendencias</value></data>
+  <data name="Live heart rate" xml:space="preserve"><value>Frecuencia cardíaca en vivo</value></data>
+  <data name="Health summary" xml:space="preserve"><value>Resumen de salud</value></data>
+  <data name="Alerts" xml:space="preserve"><value>Alertas</value></data>
+  <data name="Messages" xml:space="preserve"><value>Mensajes</value></data>
+  <data name="Users" xml:space="preserve"><value>Usuarios</value></data>
+  <data name="Roles &amp; permissions" xml:space="preserve"><value>Roles y permisos</value></data>
+  <data name="open alerts" xml:space="preserve"><value>alertas abiertas</value></data>
+  <data name="An unexpected error occurred." xml:space="preserve"><value>Ocurrió un error inesperado.</value></data>
+  <data name="Reload" xml:space="preserve"><value>Recargar</value></data>
+  <data name="Close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Checking session…" xml:space="preserve"><value>Verificando sesión…</value></data>
+  <data name="You are viewing the active crew." xml:space="preserve"><value>Estás viendo la tripulación activa.</value></data>
+  <data name="Sign in" xml:space="preserve"><value>Iniciar sesión</value></data>
+  <data name="Your health, even off the grid." xml:space="preserve"><value>Tu salud, incluso fuera de la red.</value></data>
+  <data name="Animated simulated heart rate signal" xml:space="preserve"><value>Señal animada y simulada de frecuencia cardíaca</value></data>
+  <data name="Your mission matters." xml:space="preserve"><value>Tu misión importa.</value></data>
+  <data name="Track your vital signs, record your checkups, and take care of your health throughout your space mission." xml:space="preserve"><value>Controla tus signos vitales, registra tus revisiones y cuida tu salud durante toda tu misión espacial.</value></data>
+  <data name="Welcome back" xml:space="preserve"><value>Te damos la bienvenida</value></data>
+  <data name="Sign in to your Heartbeat account." xml:space="preserve"><value>Inicia sesión en tu cuenta de Heartbeat.</value></data>
+  <data name="Your session expired. Sign in to continue." xml:space="preserve"><value>Tu sesión expiró. Inicia sesión para continuar.</value></data>
+  <data name="Could not connect to Mission Control. Please try again." xml:space="preserve"><value>No se pudo conectar con Control de misión. Inténtalo de nuevo.</value></data>
+  <data name="USERNAME" xml:space="preserve"><value>USUARIO</value></data>
+  <data name="Username field" xml:space="preserve"><value>Usuario</value></data>
+  <data name="PASSWORD" xml:space="preserve"><value>CONTRASEÑA</value></data>
+  <data name="Password field" xml:space="preserve"><value>Contraseña</value></data>
+  <data name="Signing in…" xml:space="preserve"><value>Iniciando sesión…</value></data>
+  <data name="Demo access" xml:space="preserve"><value>Acceso de demostración</value></data>
+  <data name="Use an active Mission Control account." xml:space="preserve"><value>Usa una cuenta activa de Control de misión.</value></data>
+  <data name="Demo accounts and credentials depend on the development environment." xml:space="preserve"><value>Las cuentas y credenciales de demostración dependen del entorno de desarrollo.</value></data>
+  <data name="Crew accounts sign in through their own app." xml:space="preserve"><value>Las cuentas de tripulación inician sesión desde su propia aplicación.</value></data>
+  <data name="Could not verify your session. Please try again." xml:space="preserve"><value>No se pudo verificar tu sesión. Inténtalo de nuevo.</value></data>
+  <data name="The username or password is incorrect." xml:space="preserve"><value>El usuario o la contraseña no son correctos.</value></data>
+  <data name="This account is inactive or no longer has access." xml:space="preserve"><value>Esta cuenta está inactiva o ya no tiene acceso.</value></data>
+  <data name="Your account does not have permission to access the portal." xml:space="preserve"><value>Tu cuenta no tiene permiso para acceder al portal.</value></data>
+  <data name="Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Watch" xml:space="preserve"><value>Vigilar</value></data>
+  <data name="Critical" xml:space="preserve"><value>Crítico</value></data>
+  <data name="No readings" xml:space="preserve"><value>Sin lecturas</value></data>
+  <data name="No data" xml:space="preserve"><value>Sin datos</value></data>
+</root>

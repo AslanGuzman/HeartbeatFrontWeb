@@ -5,6 +5,7 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @inject MissionControlClient Client
+@inject IStringLocalizer<SharedResource> T
 @inject MissionControlSession Session
 
 <PageTitle>Heartbeat | Detalle del astronauta</PageTitle>
@@ -923,12 +924,12 @@
         _ => "unknown"
     };
 
-    private static string StatusLabel(HealthStatus? status) => status switch
+    private string StatusLabel(HealthStatus? status) => status switch
     {
-        HealthStatus.Normal => "Normal",
-        HealthStatus.Watch => "Watch",
-        HealthStatus.Critical => "Critical",
-        _ => "No data"
+        HealthStatus.Normal => T["Normal"],
+        HealthStatus.Watch => T["Watch"],
+        HealthStatus.Critical => T["Critical"],
+        _ => T["No data"]
     };
 
     private static string Initial(string displayName) =>

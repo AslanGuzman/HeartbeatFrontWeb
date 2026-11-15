@@ -1,7 +1,18 @@
 using Heartbeat.Portal.Components;
 using Heartbeat.Portal.Services;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { new CultureInfo("es"), new CultureInfo("en") };
+    options.DefaultRequestCulture = new RequestCulture("es");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
 
 var missionControlApiBaseUrl = builder.Configuration["MissionControlApi:BaseUrl"];
 if (!Uri.TryCreate(missionControlApiBaseUrl, UriKind.Absolute, out var missionControlApiBaseAddress))
@@ -49,6 +60,7 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseRequestLocalization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
