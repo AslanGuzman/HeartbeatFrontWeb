@@ -8,11 +8,11 @@
 {
     <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand" href="/" aria-label="Heartbeat, inicio del control de misión">
+            <a class="brand" href="/" aria-label="Heartbeat, Mission Control home">
                 <span class="brand-mark" aria-hidden="true">H</span>
                 <span class="brand-copy">
                     <strong>Heartbeat</strong>
-                    <span>Control de misión</span>
+                    <span>Mission Control</span>
                 </span>
             </a>
 
@@ -21,9 +21,12 @@
 
         <div class="workspace">
             <header class="topbar">
-                <span>Control de misión</span>
+                <div class="topbar-title">
+                    <span>Mission Control</span>
+                    <span class="simulated-data-badge">Simulated data</span>
+                </div>
                 <span class="topbar-context">@user.DisplayName</span>
-                <button class="logout-button" type="button" @onclick="LogoutAsync">Cerrar sesión</button>
+                <button class="logout-button" type="button" @onclick="LogoutAsync">Sign out</button>
             </header>
 
             <main class="main-content">
@@ -32,9 +35,9 @@
         </div>
 
         <div id="blazor-error-ui" data-nosnippet>
-            Ocurrió un error inesperado.
+            An unexpected error occurred.
             <a href="." class="reload">Recargar</a>
-            <span class="dismiss">Cerrar</span>
+            <span class="dismiss">Close</span>
         </div>
     </div>
 }
@@ -42,7 +45,7 @@ else
 {
     <main class="session-check" aria-live="polite" aria-busy="@(!_ready)">
         <span class="session-spinner" aria-hidden="true"></span>
-        <span>Verificando sesión…</span>
+        <span>Checking session…</span>
     </main>
 }
 

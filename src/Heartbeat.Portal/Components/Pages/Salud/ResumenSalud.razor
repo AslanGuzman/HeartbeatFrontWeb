@@ -1,0 +1,166 @@
+@page "/salud"
+@using System.Globalization
+@using Heartbeat.Portal.Salud
+@inject MissionControlClient Client
+
+<PageTitle>Heartbeat | Resumen de salud</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <section class="salud-page" aria-labelledby="salud-title">
+        <header class="salud-heading">
+            <div>
+                <h1 id="salud-title">Resumen de salud</h1>
+                <p>@_syncText</p>
+            </div>
+            <button class="salud-button" type="button" @onclick="LoadAsync" disabled="@_loading">Actualizar</button>
+        </header>
+
+        @if (_loading)
+        {
+            <div class="salud-state" role="status" aria-busy="true">
+                <span class="session-spinner" aria-hidden="true"></span>
+                <span>Cargando datos de Samsung Health…</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var error in _errors)
+            {
+                <p class="salud-error" role="alert">@error</p>
+            }
+
+            <h2>Últimos valores</h2>
+            <div class="salud-cards">
+                @foreach (var card in Cards())
+                {
+                    <article class="salud-card">
+                        <h3>@card.Title</h3>
+                        <p class="salud-card-value">@card.Value</p>
+                        <p class="salud-card-meta">@card.Measured</p>
+                    </article>
+                }
+            </div>
+
+            <h2>Actividad</h2>
+            <p class="salud-steps">Pasos de hoy: <strong>@StepsToday()</strong></p>
+            @if (_activity is { Count: > 0 })
+            {
+                <div class="salud-table-wrap">
+                    <table class="salud-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Pasos</th><th>Distancia</th><th>Calorías activas</th><th>Minutos activos</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var day in _activity.OrderByDescending(d => d.LocalDate).Take(7))
+                            {
+                                <tr>
+                                    <td>@day.LocalDate.ToString("ddd dd/MM", CultureInfo.CurrentCulture)</td>
+                                    <td>@(day.Steps?.ToString("N0", CultureInfo.CurrentCulture) ?? "—")</td>
+                                    <td>@(day.DistanceM is { } m ? $"{m / 1000:0.00} km" : "—")</td>
+                                    <td>@(day.ActiveCaloriesKcal is { } kcal ? $"{kcal:0} kcal" : "—")</td>
+                                    <td>@(day.ActiveMinutes is { } min ? $"{min} min" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="salud-empty">Sin datos de actividad en los últimos 7 días.</p>
+            }
+
+            <h2>Última noche</h2>
+            @if (LastNight() is { } night)
+            {
+                <p class="salud-sleep">
+                    <strong>@(night.DurationMin / 60) h @(night.DurationMin % 60) min</strong>
+                    · @night.StartAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture) → @night.EndAt.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)
+                </p>
+                @if (night.StageMinutes is { } st)
+                {
+                    <p class="salud-stages">Despierto @st.Awake min · Ligero @st.Light min · Profundo @st.Deep min · REM @st.Rem min</p>
+                }
+            }
+            else
+            {
+                <p class="salud-empty">Sin datos</p>
+            }
+        }
+
+        <p class="salud-disclaimer">Datos de bienestar. No sustituyen el diagnóstico médico.</p>
+    </section>
+</RequirePermission>
+
+@code {
+    private const string NoData = "Sin datos";
+
+    private bool _loading = true;
+    private readonly List<string> _errors = new();
+    private DailySummaryDto? _summary;
+    private List<DailyActivityDto>? _activity;
+    private List<SleepRecordDto>? _sleep;
+    private string _syncText = "Última sincronización de Samsung Health: …";
+
+    private sealed record Card(string Title, string Value, string Measured);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _errors.Clear();
+
+        var summaryTask = Client.GetSaludAsync<DailySummaryDto>("/api/salud/resumen");
+        var activityTask = Client.GetSaludAsync<List<DailyActivityDto>>("/api/salud/actividad");
+        var sleepTask = Client.GetSaludAsync<List<SleepRecordDto>>("/api/salud/sueno");
+        var statusTask = Client.GetSaludAsync<List<SyncStatusDto>>("/api/salud/estado");
+        await Task.WhenAll(summaryTask, activityTask, sleepTask, statusTask);
+
+        _summary = summaryTask.Result.Data;
+        _activity = activityTask.Result.Data;
+        _sleep = sleepTask.Result.Data;
+        _syncText = SyncText(statusTask.Result.Data);
+        _errors.AddRange(new[] { summaryTask.Result.Error, activityTask.Result.Error, sleepTask.Result.Error, statusTask.Result.Error }
+            .OfType<string>()
+            .Distinct());
+        _loading = false;
+    }
+
+    private IEnumerable<Card> Cards()
+    {
+        var latest = _summary?.Latest ?? new LatestValuesDto();
+        yield return MakeCard("Frecuencia cardíaca", latest.HeartRate, v => $"{v.Value:0} {v.Unit ?? "lpm"}");
+        yield return MakeCard("SpO₂", latest.Spo2, v => $"{v.Value:0} {v.Unit ?? "%"}");
+        yield return MakeCard("Presión arterial", latest.BloodPressure,
+            v => $"{v.Value:0}/{v.Value2?.ToString("0", CultureInfo.CurrentCulture) ?? "?"} {v.Unit ?? "mmHg"}");
+        yield return MakeCard("Temperatura de piel", latest.SkinTemperature, v => $"{v.Value:0.0} {v.Unit ?? "°C"}");
+        yield return MakeCard("Peso", latest.WeightKg, v => $"{v.Value:0.0} {v.Unit ?? "kg"}");
+        yield return MakeCard("Energy Score", latest.EnergyScore, v => $"{v.Value:0}");
+    }
+
+    private static Card MakeCard(string title, LatestValueDto? value, Func<LatestValueDto, string> format) =>
+        value is null
+            ? new Card(title, NoData, " ")
+            : new Card(title, format(value), $"Medido: {value.MeasuredAt.ToLocalTime().ToString("g", CultureInfo.CurrentCulture)}");
+
+    private string StepsToday()
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var steps = _summary?.Activity?.Steps ?? _activity?.FirstOrDefault(d => d.LocalDate == today)?.Steps;
+        return steps?.ToString("N0", CultureInfo.CurrentCulture) ?? NoData;
+    }
+
+    private SleepRecordDto? LastNight() => _summary?.Sleep ?? _sleep?.OrderByDescending(n => n.EndAt).FirstOrDefault();
+
+    private static string SyncText(List<SyncStatusDto>? status)
+    {
+        if (status is not { Count: > 0 })
+        {
+            return "Última sincronización de Samsung Health: sin datos";
+        }
+
+        var minutes = Math.Max(0, (int)(DateTimeOffset.Now - status.Max(s => s.LastSyncedAt)).TotalMinutes);
+        return $"Última sincronización de Samsung Health: hace {minutes} min";
+    }
+}

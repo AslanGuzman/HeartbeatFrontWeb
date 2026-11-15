@@ -9,52 +9,52 @@
 @inject MissionControlSession Session
 @inject IJSRuntime JS
 
-<PageTitle>Heartbeat | Tendencias</PageTitle>
+<PageTitle>Heartbeat | Trends</PageTitle>
 
 <RequirePermission Permission="@Permissions.VitalsHistory">
     <ChildContent>
         <section class="charts-page" aria-labelledby="charts-title">
             <header class="charts-heading">
                 <div>
-                    <h1 id="charts-title">Tendencias por indicador</h1>
-                    <p>Evolución de la tripulación con las bandas de referencia.</p>
+                    <h1 id="charts-title">Trends por indicador</h1>
+                    <p>Crew trends with reference ranges.</p>
                 </div>
             </header>
 
             @if (!Session.HasPermission(Permissions.CrewView))
             {
                 <div class="charts-state" role="alert">
-                    <h2>Sin permiso para ver la tripulación</h2>
-                    <p>Tu cuenta necesita el permiso crew.view para elegir un astronauta.</p>
+                    <h2>You don’t have permission to view the crew</h2>
+                    <p>Your account needs crew.view permission to select an astronaut.</p>
                 </div>
             }
             else if (_loadingCrew)
             {
                 <div class="charts-state" role="status" aria-busy="true">
                     <span class="session-spinner" aria-hidden="true"></span>
-                    <span>Cargando tripulación…</span>
+                    <span>Loading crew…</span>
                 </div>
             }
             else if (_crewError is not null)
             {
                 <div class="charts-state" role="alert">
-                    <h2>No se pudo cargar la tripulación</h2>
+                    <h2>Could not load crew</h2>
                     <p>@_crewError</p>
-                    <button class="charts-button" type="button" @onclick="LoadCrewAsync">Reintentar</button>
+                    <button class="charts-button" type="button" @onclick="LoadCrewAsync">Retry</button>
                 </div>
             }
             else if (_crew is null || _crew.Length == 0)
             {
                 <div class="charts-state">
-                    <h2>No hay astronautas registrados</h2>
-                    <p>Las tendencias aparecerán cuando exista tripulación.</p>
+                    <h2>No astronauts found</h2>
+                    <p>Trends will appear when crew members are available.</p>
                 </div>
             }
             else
             {
                 <div class="charts-controls">
                     <label class="charts-astronaut">
-                        <span>Astronauta</span>
+                        <span>Astronaut</span>
                         <select @bind="_selectedAstronautId"
                                 @bind:after="LoadChartsAsync"
                                 disabled="@_loadingCharts">
@@ -65,7 +65,7 @@
                         </select>
                     </label>
 
-                    <div class="charts-ranges" role="group" aria-label="Rango de tiempo">
+                    <div class="charts-ranges" role="group" aria-label="Time range">
                         @foreach (var chartRange in Ranges)
                         {
                             <button class="charts-range @(_range == chartRange ? "charts-range--active" : "")"
@@ -81,30 +81,30 @@
                 {
                     <p class="charts-context">
                         @_profile.DisplayName · @_profile.Mission.Name ·
-                        Misión desde @FormatDate(_profile.Mission.StartsAt)
+                        Mission since @FormatDate(_profile.Mission.StartsAt)
                     </p>
                 }
 
                 @if (_forbidden)
                 {
                     <div class="charts-state" role="alert">
-                        <h2>Sin permiso para consultar las tendencias</h2>
-                        <p>Tu cuenta no tiene el permiso vitals.history.</p>
+                        <h2>You don’t have permission to view trends</h2>
+                        <p>Your account does not have vitals.history permission.</p>
                     </div>
                 }
                 else if (_chartsError is not null)
                 {
                     <div class="charts-state" role="alert">
-                        <h2>No se pudieron cargar las tendencias</h2>
+                        <h2>Could not load trends</h2>
                         <p>@_chartsError</p>
-                        <button class="charts-button" type="button" @onclick="LoadChartsAsync">Reintentar</button>
+                        <button class="charts-button" type="button" @onclick="LoadChartsAsync">Retry</button>
                     </div>
                 }
                 else if (_loadingCharts)
                 {
                     <div class="charts-state" role="status" aria-busy="true">
                         <span class="session-spinner" aria-hidden="true"></span>
-                        <span>Cargando tendencias…</span>
+                        <span>Loading trends…</span>
                     </div>
                 }
                 else
@@ -124,14 +124,14 @@
 
                                 @if (series is null || series.Points.Count == 0)
                                 {
-                                    <p class="chart-empty">Sin datos en este rango.</p>
+                                    <p class="chart-empty">No data for this date range.</p>
                                 }
                                 else
                                 {
                                     <div class="chart-frame">
                                         <canvas id="@ChartId(indicator)"
                                                 role="img"
-                                                aria-label="@($"Gráfica de {IndicatorName(indicator)}")"></canvas>
+                                                aria-label="@($"Chart for {IndicatorName(indicator)}")"></canvas>
                                     </div>
                                 }
                             </article>
@@ -195,7 +195,7 @@
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
-            _crewError = "Tu cuenta no tiene permiso para ver la tripulación.";
+            _crewError = "Your account does not have permission to view the crew.";
         }
         catch (Exception exception) when (
             exception is HttpRequestException or
@@ -203,7 +203,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _crewError = "Comprueba la conexión e inténtalo de nuevo.";
+            _crewError = "Check your connection and try again.";
         }
         finally
         {
@@ -253,7 +253,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _chartsError = "Comprueba la conexión e inténtalo de nuevo.";
+            _chartsError = "Check your connection and try again.";
             _series.Clear();
         }
         finally
@@ -337,19 +337,19 @@
 
     private static string RangeLabel(ChartRange range) => range switch
     {
-        ChartRange.Days7 => "7 días",
-        ChartRange.Days30 => "30 días",
-        _ => "Misión"
+        ChartRange.Days7 => "7 days",
+        ChartRange.Days30 => "30 days",
+        _ => "Mission"
     };
 
     private static string IndicatorName(IndicatorType indicator) => indicator switch
     {
-        IndicatorType.BloodPressure => "Presión arterial",
-        IndicatorType.HeartRate => "Frecuencia cardíaca",
-        IndicatorType.BloodSugar => "Glucosa en sangre",
-        IndicatorType.BodyTemperature => "Temperatura corporal",
-        IndicatorType.Sleep => "Sueño",
-        IndicatorType.Mood => "Estado de ánimo",
+        IndicatorType.BloodPressure => "Blood pressure",
+        IndicatorType.HeartRate => "Heart rate",
+        IndicatorType.BloodSugar => "Blood glucose",
+        IndicatorType.BodyTemperature => "Body temperature",
+        IndicatorType.Sleep => "Sleep",
+        IndicatorType.Mood => "Mood",
         _ => indicator.ToString()
     };
 

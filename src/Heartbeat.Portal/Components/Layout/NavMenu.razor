@@ -2,7 +2,7 @@
 @inject MissionControlSession Session
 @inject AlertCounterState AlertCounter
 
-<nav class="primary-navigation" aria-label="Navegación principal">
+<nav class="primary-navigation" aria-label="Main navigation">
     <ul>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
@@ -11,22 +11,32 @@
         </li>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
-                <NavLink href="/crew" Match="NavLinkMatch.Prefix">Tripulación</NavLink>
+                <NavLink href="/crew" Match="NavLinkMatch.Prefix">Crew</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.VitalsHistory">
-                <NavLink href="/charts" Match="NavLinkMatch.Prefix">Tendencias</NavLink>
+                <NavLink href="/charts" Match="NavLinkMatch.Prefix">Trends</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/fc-en-vivo" Match="NavLinkMatch.Prefix">FC en vivo</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/salud" Match="NavLinkMatch.Prefix">Resumen de salud</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.AlertsView">
                 <NavLink href="/alerts" Match="NavLinkMatch.Prefix">
-                    <span>Alertas</span>
+                    <span>Alerts</span>
                     @if (AlertCounter.OpenCount is > 0)
                     {
                         <span class="nav-alert-count"
-                              aria-label="@($"{AlertCounter.OpenCount} alertas abiertas")">
+                              aria-label="@($"{AlertCounter.OpenCount} open alerts")">
                             @AlertCounter.OpenCount
                         </span>
                     }
@@ -35,17 +45,17 @@
         </li>
         <li>
             <RequirePermission Permission="@Permissions.MessagesView">
-                <NavLink href="/messages" Match="NavLinkMatch.Prefix">Mensajes</NavLink>
+                <NavLink href="/messages" Match="NavLinkMatch.Prefix">Messages</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.UsersView">
-                <NavLink href="/users" Match="NavLinkMatch.Prefix">Usuarios</NavLink>
+                <NavLink href="/users" Match="NavLinkMatch.Prefix">Users</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.RolesManage">
-                <NavLink href="/roles" Match="NavLinkMatch.Prefix">Roles y permisos</NavLink>
+                <NavLink href="/roles" Match="NavLinkMatch.Prefix">Roles & permissions</NavLink>
             </RequirePermission>
         </li>
     </ul>
