@@ -290,6 +290,7 @@ textarea:focus-visible {
 }
 
 .topbar-actions {
+    margin-left: auto;
     flex: none;
     display: flex;
     align-items: center;

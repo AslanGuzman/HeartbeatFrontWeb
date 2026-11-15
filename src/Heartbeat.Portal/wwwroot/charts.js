@@ -1,7 +1,7 @@
 const bandColors = {
-    normal: 'rgba(46, 158, 91, 0.10)',
-    watch: 'rgba(217, 142, 4, 0.12)',
-    critical: 'rgba(153, 14, 14, 0.10)'
+    normal: 'rgba(46, 158, 91, 0.025)',
+    watch: 'rgba(217, 142, 4, 0.06)',
+    critical: 'rgba(153, 14, 14, 0.045)'
 };
 
 const statusColors = {
@@ -12,7 +12,7 @@ const statusColors = {
 
 const statusBands = {
     id: 'statusBands',
-    beforeDatasetsDraw(chart, _args, options) {
+    beforeDraw(chart, _args, options) {
         const bands = options?.bands;
         if (!bands?.length || !chart.chartArea) {
             return;
@@ -23,10 +23,10 @@ const statusBands = {
 
         for (const band of bands) {
             const first = band.max == null
-                ? chartArea.bottom
+                ? chartArea.top
                 : scales.y.getPixelForValue(band.max);
             const second = band.min == null
-                ? chartArea.top
+                ? chartArea.bottom
                 : scales.y.getPixelForValue(band.min);
             const top = Math.max(chartArea.top, Math.min(first, second));
             const bottom = Math.min(chartArea.bottom, Math.max(first, second));
@@ -60,10 +60,15 @@ export function render(canvasId, payload) {
         borderColor: '#110559',
         backgroundColor: '#110559',
         pointBackgroundColor: payload.points.map(point => statusColors[point.status] ?? statusColors.normal),
-        pointBorderColor: payload.points.map(point => statusColors[point.status] ?? statusColors.normal),
-        pointRadius: 3,
+        pointBorderColor: '#FFFFFF',
+        pointBorderWidth: 1.5,
+        pointRadius: payload.points.map(point =>
+            point.status === 'watch' || point.status === 'critical' ? 4 : payload.points.length === 1 ? 3 : 0),
+        pointStyle: payload.points.map(point => point.status === 'critical' ? 'rectRot' : 'circle'),
+        pointHoverRadius: 5,
+        pointHitRadius: 10,
         borderWidth: 2,
-        tension: 0.25
+        tension: 0
     }];
 
     if (payload.points.some(point => point.secondaryValue != null)) {
@@ -75,10 +80,12 @@ export function render(canvasId, payload) {
             })),
             borderColor: '#6B7280',
             backgroundColor: '#6B7280',
-            pointRadius: 2,
+            pointRadius: payload.points.length === 1 ? 3 : 0,
+            pointHoverRadius: 5,
+            pointHitRadius: 10,
             borderWidth: 1.5,
             borderDash: [4, 3],
-            tension: 0.25
+            tension: 0
         });
     }
 
@@ -90,10 +97,19 @@ export function render(canvasId, payload) {
             maintainAspectRatio: false,
             animation: false,
             parsing: false,
+            interaction: { mode: 'index', intersect: false },
+            layout: { padding: { top: 8, right: 8 } },
             plugins: {
                 legend: {
                     display: datasets.length > 1,
-                    labels: { boxWidth: 10, font: { size: 10 } }
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 16,
+                        boxHeight: 2,
+                        padding: 16,
+                        color: '#6B7280',
+                        font: { size: 11 }
+                    }
                 },
                 tooltip: {
                     callbacks: {
@@ -109,18 +125,29 @@ export function render(canvasId, payload) {
             scales: {
                 x: {
                     type: 'linear',
+                    border: { display: false },
                     grid: { display: false },
                     ticks: {
-                        maxTicksLimit: 6,
-                        font: { size: 10 },
+                        maxTicksLimit: 4,
+                        maxRotation: 0,
+                        padding: 10,
+                        color: '#6B7280',
+                        font: { size: 11 },
                         callback: value => new Date(value).toLocaleDateString(
                             'es-ES',
                             { day: '2-digit', month: 'short' })
                     }
                 },
                 y: {
-                    ticks: { font: { size: 10 } },
-                    grid: { color: 'rgba(236, 237, 245, 0.9)' }
+                    border: { display: false },
+                    grace: '8%',
+                    ticks: {
+                        maxTicksLimit: 5,
+                        padding: 10,
+                        color: '#6B7280',
+                        font: { size: 11 }
+                    },
+                    grid: { color: 'rgba(107, 114, 128, 0.10)', drawTicks: false }
                 }
             }
         },

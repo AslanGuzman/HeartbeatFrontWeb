@@ -1,18 +1,19 @@
 @inject Microsoft.JSInterop.IJSRuntime JS
 @inject Microsoft.Extensions.Localization.IStringLocalizer<SharedResource> T
 
-<label class="language-selector">
-    <span class="visually-hidden">@T["Language"]</span>
-    <select aria-label="@T["Language"]" value="@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName" @onchange="ChangeLanguageAsync">
-        <option value="es">Español</option>
-        <option value="en">English</option>
-    </select>
-</label>
+<div class="language-selector" role="group" aria-label="@T["Language"]">
+    <button type="button" lang="es" aria-label="Español"
+            aria-pressed="@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "es" ? "true" : "false")"
+            @onclick='() => ChangeLanguageAsync("es")'>ES</button>
+    <button type="button" lang="en" aria-label="English"
+            aria-pressed="@(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? "true" : "false")"
+            @onclick='() => ChangeLanguageAsync("en")'>EN</button>
+</div>
 
 @code {
-    private async Task ChangeLanguageAsync(ChangeEventArgs args)
+    private async Task ChangeLanguageAsync(string culture)
     {
-        if (args.Value is not string culture || culture is not ("es" or "en"))
+        if (culture is not ("es" or "en") || culture == CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)
             return;
 
         await JS.InvokeVoidAsync("heartbeatLanguage.set", culture);

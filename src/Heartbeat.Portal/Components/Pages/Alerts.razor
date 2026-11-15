@@ -81,26 +81,51 @@
                                  class="alert-card @(acknowledged ? "alert-card--acknowledged" : "alert-card--open")">
                             <header class="alert-card-heading">
                                 <div>
-                                    <h2>@IndicatorSummary(alert.Indicators)</h2>
+                                    <h2>@AlertTitle(alert)</h2>
                                     <p class="alert-astronaut">@alert.AstronautName</p>
                                 </div>
-                                <span class="alert-severity">Critical</span>
+                                <span class="alert-symbol" aria-hidden="true">
+                                    <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        @if (acknowledged)
+                                        {
+                                            <circle cx="16" cy="16" r="12" />
+                                            <path d="m10 16 4 4 8-8" />
+                                        }
+                                        else
+                                        {
+                                            <path d="M3 17h6l4-10 6 18 4-8h6" />
+                                        }
+                                    </svg>
+                                </span>
                             </header>
+
+                            <div class="alert-status">
+                                <span class="alert-severity">Critical</span>
+                                <span class="alert-workflow">@(acknowledged ? "Reconocida" : "Pendiente de reconocimiento")</span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(alert.Message))
+                            {
+                                <p class="alert-message">@alert.Message</p>
+                            }
 
                             <dl class="alert-details">
                                 <div>
                                     <dt>Alert date</dt>
-                                    <dd>@FormatTimestamp(alert.CreatedAt)</dd>
+                                    <dd><time datetime="@alert.CreatedAt.ToString("O")">@FormatTimestamp(alert.CreatedAt)</time></dd>
                                 </div>
-                                <div>
-                                    <dt>Indicadores</dt>
-                                    <dd class="alert-indicators">
-                                        @foreach (var indicator in alert.Indicators)
-                                        {
-                                            <span @key="indicator">@IndicatorName(indicator)</span>
-                                        }
-                                    </dd>
-                                </div>
+                                @if (alert.Indicators.Count > 0)
+                                {
+                                    <div>
+                                        <dt>Indicadores</dt>
+                                        <dd class="alert-indicators">
+                                            @foreach (var indicator in alert.Indicators)
+                                            {
+                                                <span @key="indicator">@IndicatorName(indicator)</span>
+                                            }
+                                        </dd>
+                                    </div>
+                                }
                             </dl>
 
                             @if (acknowledged)
@@ -149,7 +174,7 @@
                                 }
                                 else
                                 {
-                                    <button class="alerts-action"
+                                    <button class="alert-action"
                                             type="button"
                                             @onclick="() => BeginAcknowledge(alert.Id)">
                                         Acknowledge alert
@@ -362,8 +387,15 @@
     private string TabClass(string state) =>
         state == _state ? "alerts-tab alerts-tab--active" : "alerts-tab";
 
-    private static string IndicatorSummary(IReadOnlyList<IndicatorType> indicators) =>
-        string.Join(", ", indicators.Select(IndicatorName));
+    private static string AlertTitle(AlertDto alert) =>
+        alert.Indicators.Count > 0
+            ? string.Join(", ", alert.Indicators.Select(IndicatorName))
+            : alert.Kind switch
+            {
+                AlertKind.Environment => "Ambiente de la misión",
+                AlertKind.Radiation => "Exposición a radiación",
+                _ => "Revisión de salud"
+            };
 
     private static string IndicatorName(IndicatorType indicator) => indicator switch
     {

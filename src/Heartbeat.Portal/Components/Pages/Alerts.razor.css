@@ -1,6 +1,8 @@
 .alerts-page {
     display: grid;
     gap: 1.25rem;
+    max-width: 88rem;
+    margin-inline: auto;
 }
 
 .alerts-heading {
@@ -32,6 +34,11 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.35rem;
+    width: fit-content;
+    padding: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: 0.8rem;
+    background: var(--surface);
 }
 
 .alerts-tab {
@@ -59,28 +66,67 @@
 
 .alerts-list {
     display: grid;
-    gap: 0.9rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 1.25rem;
 }
 
 .alert-card {
+    --incident-color: var(--brand-red);
+    --incident-surface: var(--brand-red-soft);
     display: grid;
-    gap: 0.95rem;
-    padding: 1.15rem 1.25rem;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1.5rem;
     border: 1px solid var(--border);
-    border-left: 3px solid var(--status-critical);
-    border-radius: var(--radius-card);
+    border-top: 4px solid var(--incident-color);
+    border-radius: 0.5rem 0.5rem 1.5rem 0.5rem;
     background: var(--surface);
-    box-shadow: var(--shadow-card);
-    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
-}
-
-.alert-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-card-hover);
+    box-shadow: 0 4px 16px rgb(17 5 89 / 4%);
 }
 
 .alert-card--acknowledged {
-    border-left-color: var(--brand-blue);
+    --incident-color: var(--brand-blue);
+    --incident-surface: var(--brand-blue-soft);
+    border-top-width: 2px;
+}
+
+.alert-symbol {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    background: var(--incident-surface);
+    color: var(--incident-color);
+}
+
+.alert-symbol svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+.alert-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+}
+
+.alert-workflow {
+    color: var(--incident-color);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.alert-message {
+    margin: 0;
+    max-width: 65ch;
+    color: var(--text-body);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }
 
 .alert-card-heading {
@@ -93,11 +139,14 @@
 .alert-card-heading h2 {
     margin: 0;
     color: var(--brand-blue);
-    font-size: 1.08rem;
+    font-size: clamp(1.15rem, 2vw, 1.4rem);
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
 }
 
 .alert-astronaut {
-    margin: 0.3rem 0 0;
+    margin: 0.5rem 0 0;
     color: var(--text-secondary);
     font-size: 0.85rem;
 }
@@ -114,11 +163,12 @@
 
 .alert-details {
     display: grid;
-    grid-template-columns: minmax(10rem, 0.7fr) minmax(0, 1.3fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.7rem 1.1rem;
     margin: 0;
-    padding-top: 0.8rem;
+    padding-block: 1rem;
     border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
 }
 
 .alert-details dt {
@@ -131,6 +181,7 @@
     color: var(--brand-blue);
     font-size: 0.88rem;
     font-weight: 650;
+    font-variant-numeric: tabular-nums;
 }
 
 .alert-indicators {
@@ -149,29 +200,33 @@
 }
 
 .alert-action {
-    width: fit-content;
-    padding: 0.35rem 0;
-    border: 0;
-    background: transparent;
-    color: var(--brand-blue);
+    justify-self: start;
+    min-height: 2.75rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: var(--radius-control);
+    background: var(--brand-blue);
+    color: #FFFFFF;
     font: inherit;
     font-size: 0.86rem;
     font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
     cursor: pointer;
 }
 
 .alert-action:hover {
-    color: var(--brand-red);
+    background: var(--brand-blue-hover);
+}
+
+.alerts-page button:focus-visible {
+    outline: 3px solid var(--brand-blue);
+    outline-offset: 3px;
 }
 
 .alert-acknowledgement {
     display: grid;
     gap: 0.25rem;
-    padding: 0.75rem 0.9rem;
-    border-radius: 0.65rem;
-    background: var(--surface-raised);
+    padding: 0.25rem 0 0.25rem 0.9rem;
+    border-left: 2px solid var(--input-border);
     color: var(--text-secondary);
     font-size: 0.82rem;
 }
@@ -303,7 +358,17 @@
     color: var(--text-primary);
 }
 
+@media (max-width: 64rem) {
+    .alerts-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 @media (max-width: 42rem) {
+    .alert-card {
+        padding: 1.15rem;
+    }
+
     .alerts-heading {
         align-items: flex-start;
         flex-direction: column;
