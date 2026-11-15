@@ -107,6 +107,51 @@ public sealed class MissionControlClient(
     public Task<JsonDocument> GetReferenceRangesAsync(CancellationToken cancellationToken = default) =>
         GetAsync<JsonDocument>("reference-ranges", cancellationToken);
 
+    public Task<Paged<MessageDto>> GetCrewMessagesAsync(
+        Guid astronautId,
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"crew/{astronautId:D}/messages" +
+                  $"?page={page.ToString(CultureInfo.InvariantCulture)}" +
+                  $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
+        return GetAsync<Paged<MessageDto>>(uri, cancellationToken);
+    }
+
+    public async Task<MessageDto> SendCrewMessageAsync(
+        Guid astronautId,
+        SendMessageRequest message,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"crew/{astronautId:D}/messages")
+        {
+            Content = JsonContent.Create(message, options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<MessageDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
+    public async Task MarkMessageReadAsync(
+        Guid messageId,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"messages/{messageId:D}/read");
+        using var response = await SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public Task<Paged<AlertDto>> GetAlertsAsync(
         string state = "open",
         int page = 1,
