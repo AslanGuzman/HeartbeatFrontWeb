@@ -6,17 +6,43 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @inject MissionControlClient Client
 @inject IConfiguration Configuration
+@inject MissionControlSession Session
 
 @* La página es interactiva: App.razor renderiza todas las rutas con @rendermode="InteractiveServer". *@
 
 <PageTitle>Heartbeat | FC en vivo</PageTitle>
 
 <RequirePermission Permission="@Permissions.CrewView">
-    <section class="live-page" aria-labelledby="live-title">
+    <RequirePermission Permission="@Permissions.VitalsView">
+      <section class="live-page" aria-labelledby="live-title">
         <header class="live-heading">
             <h1 id="live-title">Frecuencia cardíaca en vivo</h1>
             <p>Galaxy Watch 5 · una lectura por segundo mientras la app del reloj está en pantalla.</p>
         </header>
+
+        @if (_loadingCrew)
+        {
+            <p role="status">Cargando astronautas…</p>
+        }
+        else if (_crewError is not null)
+        {
+            <p class="live-error" role="alert">@_crewError</p>
+        }
+        else if (_crew is null || _crew.Length == 0)
+        {
+            <p>No hay astronautas disponibles.</p>
+        }
+        else
+        {
+        <label class="live-selector">
+            <span>Astronauta</span>
+            <select @bind="_selectedAstronautId" @bind:after="ChangeAstronautAsync">
+                @foreach (var astronaut in _crew)
+                {
+                    <option value="@astronaut.AstronautId">@AstronautLabel(astronaut)</option>
+                }
+            </select>
+        </label>
 
         <div class="live-card">
             <div class="live-value" aria-live="polite">
@@ -26,6 +52,10 @@
             <div class="live-meta">
                 <span>@(_latest is null ? "Sin lecturas todavía" : $"Medida a las {_latest.MeasuredAt.ToLocalTime():HH:mm:ss}")</span>
                 <span class="live-status @StatusClass">@StatusText</span>
+                @if (_heartRateStatus is not null)
+                {
+                    <span class="live-status">@ClinicalStatusText</span>
+                }
             </div>
 
             @if (IsStale && _hub?.State == HubConnectionState.Connected)
@@ -45,7 +75,10 @@
             </svg>
             <p class="live-chart-caption">Últimas @_readings.Count lecturas (máximo @MaxReadings)</p>
         </div>
-    </section>
+        <p class="live-disclaimer">Datos del reloj, no validados clínicamente</p>
+        }
+      </section>
+    </RequirePermission>
 </RequirePermission>
 
 @code {
@@ -59,7 +92,12 @@
     private HubConnection? _hub;
     private PeriodicTimer? _timer;
     private HeartRateReading? _latest;
+    private HeartRateStatusEvent? _heartRateStatus;
     private DateTimeOffset? _lastDataAt;
+    private CrewSummaryDto[]? _crew;
+    private Guid _selectedAstronautId;
+    private bool _loadingCrew = true;
+    private string? _crewError;
     private string _connection = "conectando…";
     private string? _error;
 
@@ -74,9 +112,64 @@
         _ => "is-pending",
     };
 
+    private string ClinicalStatusText => _heartRateStatus?.Status switch
+    {
+        HealthStatus.Normal => "Normal",
+        HealthStatus.Watch => "En observación",
+        HealthStatus.Critical => "Crítico",
+        _ => string.Empty,
+    };
+
     protected override async Task OnInitializedAsync()
     {
-        var history = await Client.GetSaludAsync<List<HeartRateReading>>("/api/heartrate/recent?seconds=300", _cts.Token);
+        if (!Session.HasPermission(Permissions.CrewView) ||
+            !Session.HasPermission(Permissions.VitalsView))
+        {
+            _loadingCrew = false;
+            return;
+        }
+
+        try
+        {
+            _crew = await Client.GetCrewAsync(_cts.Token);
+            if (_crew.Length > 0)
+            {
+                _selectedAstronautId = _crew[0].AstronautId;
+                await LoadAstronautAsync();
+            }
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or InvalidDataException or TaskCanceledException)
+        {
+            _crewError = "No se pudo cargar la tripulación.";
+        }
+        finally
+        {
+            _loadingCrew = false;
+        }
+
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _ = TickAsync(_timer);
+    }
+
+    private async Task ChangeAstronautAsync()
+    {
+        await DisconnectHubAsync();
+        await LoadAstronautAsync();
+    }
+
+    private async Task LoadAstronautAsync()
+    {
+        _readings.Clear();
+        _latest = null;
+        _heartRateStatus = null;
+        _lastDataAt = null;
+        _error = null;
+        _connection = "conectando…";
+
+        var history = await Client.GetSaludAsync<List<HeartRateReading>>(
+            $"/api/heartrate/recent?seconds=300&astronautId={_selectedAstronautId:D}",
+            _cts.Token);
         if (history.Data is { Count: > 0 } readings)
         {
             _readings.AddRange(readings.TakeLast(MaxReadings));
@@ -88,19 +181,22 @@
             _error = $"No se pudo cargar el historial: {history.Error}";
         }
 
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
-        _ = TickAsync(_timer);
         _ = ConnectAsync();
     }
 
     private async Task ConnectAsync()
     {
-        _hub = new HubConnectionBuilder()
-            .WithUrl(new Uri(BackendAddress.Root(Configuration), "hubs/heartrate"))
+        var hubUri = new Uri(
+            BackendAddress.Root(Configuration),
+            $"hubs/heartrate?astronautId={_selectedAstronautId:D}");
+        var hub = new HubConnectionBuilder()
+            .WithUrl(hubUri, options =>
+                options.AccessTokenProvider = () => Client.GetAccessTokenAsync(_cts.Token))
             .WithAutomaticReconnect()
             .Build();
+        _hub = hub;
 
-        _hub.On<HeartRateReading>("HeartRate", reading => InvokeAsync(() =>
+        hub.On<HeartRateReading>("HeartRate", reading => InvokeAsync(() =>
         {
             _readings.Add(reading);
             if (_readings.Count > MaxReadings)
@@ -112,16 +208,21 @@
             _lastDataAt = DateTimeOffset.Now;
             StateHasChanged();
         }));
-        _hub.Reconnecting += _ => SetConnectionAsync("reconectando…");
-        _hub.Reconnected += _ => SetConnectionAsync("en vivo");
-        _hub.Closed += ex => SetConnectionAsync(ex is null ? "desconectado" : $"desconectado: {ex.Message}");
+        hub.On<HeartRateStatusEvent>("HeartRateStatus", status => InvokeAsync(() =>
+        {
+            _heartRateStatus = status;
+            StateHasChanged();
+        }));
+        hub.Reconnecting += _ => SetConnectionAsync("reconectando…");
+        hub.Reconnected += _ => SetConnectionAsync("en vivo");
+        hub.Closed += ex => SetConnectionAsync(ex is null ? "desconectado" : $"desconectado: {ex.Message}");
 
         // WithAutomaticReconnect solo reintenta conexiones ya establecidas: el primer arranque se reintenta aquí.
-        while (!_cts.IsCancellationRequested)
+        while (!_cts.IsCancellationRequested && ReferenceEquals(_hub, hub))
         {
             try
             {
-                await _hub.StartAsync(_cts.Token);
+                await hub.StartAsync(_cts.Token);
                 await SetConnectionAsync("en vivo");
                 return;
             }
@@ -150,6 +251,30 @@
         _connection = state;
         StateHasChanged();
     });
+
+    private async Task DisconnectHubAsync()
+    {
+        if (_hub is null)
+        {
+            return;
+        }
+
+        var hub = _hub;
+        _hub = null;
+        try
+        {
+            await hub.DisposeAsync();
+        }
+        catch (Exception)
+        {
+            // Changing astronaut must still continue if the old connection already closed.
+        }
+    }
+
+    private static string AstronautLabel(CrewSummaryDto astronaut) =>
+        string.IsNullOrWhiteSpace(astronaut.CallSign)
+            ? astronaut.DisplayName
+            : $"{astronaut.DisplayName} ({astronaut.CallSign})";
 
     // Refresca el estado cada segundo para que aparezca el aviso de "sin datos" aunque no lleguen lecturas.
     private async Task TickAsync(PeriodicTimer timer)
@@ -190,17 +315,7 @@
     {
         await _cts.CancelAsync();
         _timer?.Dispose();
-        if (_hub is not null)
-        {
-            try
-            {
-                await _hub.DisposeAsync();
-            }
-            catch (Exception)
-            {
-                // El circuito ya se cierra: un fallo al cerrar la conexión no debe propagarse.
-            }
-        }
+        await DisconnectHubAsync();
 
         _cts.Dispose();
     }

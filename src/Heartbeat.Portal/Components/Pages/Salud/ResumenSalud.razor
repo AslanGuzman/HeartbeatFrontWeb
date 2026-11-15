@@ -2,10 +2,12 @@
 @using System.Globalization
 @using Heartbeat.Portal.Salud
 @inject MissionControlClient Client
+@inject MissionControlSession Session
 
 <PageTitle>Heartbeat | Resumen de salud</PageTitle>
 
 <RequirePermission Permission="@Permissions.CrewView">
+  <RequirePermission Permission="@Permissions.VitalsView">
     <section class="salud-page" aria-labelledby="salud-title">
         <header class="salud-heading">
             <div>
@@ -14,6 +16,30 @@
             </div>
             <button class="salud-button" type="button" @onclick="LoadAsync" disabled="@_loading">Actualizar</button>
         </header>
+
+        @if (_loadingCrew)
+        {
+            <div class="salud-state" role="status">Cargando astronautas…</div>
+        }
+        else if (_crewError is not null)
+        {
+            <p class="salud-error" role="alert">@_crewError</p>
+        }
+        else if (_crew is null || _crew.Length == 0)
+        {
+            <p class="salud-empty">No hay astronautas disponibles.</p>
+        }
+        else
+        {
+        <label class="salud-selector">
+            <span>Astronauta</span>
+            <select @bind="_selectedAstronautId" @bind:after="LoadAsync" disabled="@_loading">
+                @foreach (var astronaut in _crew)
+                {
+                    <option value="@astronaut.AstronautId">@AstronautLabel(astronaut)</option>
+                }
+            </select>
+        </label>
 
         @if (_loading)
         {
@@ -87,16 +113,22 @@
                 <p class="salud-empty">Sin datos</p>
             }
         }
+        }
 
-        <p class="salud-disclaimer">Datos de bienestar. No sustituyen el diagnóstico médico.</p>
+        <p class="salud-disclaimer">Datos del reloj, no validados clínicamente</p>
     </section>
+  </RequirePermission>
 </RequirePermission>
 
 @code {
     private const string NoData = "Sin datos";
 
     private bool _loading = true;
+    private bool _loadingCrew = true;
     private readonly List<string> _errors = new();
+    private CrewSummaryDto[]? _crew;
+    private Guid _selectedAstronautId;
+    private string? _crewError;
     private DailySummaryDto? _summary;
     private List<DailyActivityDto>? _activity;
     private List<SleepRecordDto>? _sleep;
@@ -104,17 +136,46 @@
 
     private sealed record Card(string Title, string Value, string Measured);
 
-    protected override Task OnInitializedAsync() => LoadAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.HasPermission(Permissions.CrewView) ||
+            !Session.HasPermission(Permissions.VitalsView))
+        {
+            _loadingCrew = false;
+            _loading = false;
+            return;
+        }
+
+        try
+        {
+            _crew = await Client.GetCrewAsync();
+            if (_crew.Length > 0)
+            {
+                _selectedAstronautId = _crew[0].AstronautId;
+                await LoadAsync();
+            }
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or InvalidDataException or TaskCanceledException)
+        {
+            _crewError = "No se pudo cargar la tripulación.";
+            _loading = false;
+        }
+        finally
+        {
+            _loadingCrew = false;
+        }
+    }
 
     private async Task LoadAsync()
     {
         _loading = true;
         _errors.Clear();
 
-        var summaryTask = Client.GetSaludAsync<DailySummaryDto>("/api/salud/resumen");
-        var activityTask = Client.GetSaludAsync<List<DailyActivityDto>>("/api/salud/actividad");
-        var sleepTask = Client.GetSaludAsync<List<SleepRecordDto>>("/api/salud/sueno");
-        var statusTask = Client.GetSaludAsync<List<SyncStatusDto>>("/api/salud/estado");
+        var summaryTask = Client.GetSaludAsync<DailySummaryDto>(SaludPath("resumen"));
+        var activityTask = Client.GetSaludAsync<List<DailyActivityDto>>(SaludPath("actividad"));
+        var sleepTask = Client.GetSaludAsync<List<SleepRecordDto>>(SaludPath("sueno"));
+        var statusTask = Client.GetSaludAsync<List<SyncStatusDto>>(SaludPath("estado"));
         await Task.WhenAll(summaryTask, activityTask, sleepTask, statusTask);
 
         _summary = summaryTask.Result.Data;
@@ -126,6 +187,14 @@
             .Distinct());
         _loading = false;
     }
+
+    private string SaludPath(string resource) =>
+        $"/api/salud/{resource}?astronautId={_selectedAstronautId:D}";
+
+    private static string AstronautLabel(CrewSummaryDto astronaut) =>
+        string.IsNullOrWhiteSpace(astronaut.CallSign)
+            ? astronaut.DisplayName
+            : $"{astronaut.DisplayName} ({astronaut.CallSign})";
 
     private IEnumerable<Card> Cards()
     {

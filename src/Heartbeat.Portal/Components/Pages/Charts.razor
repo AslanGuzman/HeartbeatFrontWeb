@@ -64,6 +64,16 @@
                             }
                         </select>
                     </label>
+                    <label class="charts-astronaut">
+                        <span>Origen</span>
+                        <select @bind="_source"
+                                @bind:after="LoadChartsAsync"
+                                disabled="@_loadingCharts">
+                            <option value="">Todos</option>
+                            <option value="manual">Manual</option>
+                            <option value="wearable">Reloj</option>
+                        </select>
+                    </label>
 
                     <div class="charts-ranges" role="group" aria-label="Time range">
                         @foreach (var chartRange in Ranges)
@@ -84,6 +94,7 @@
                         Mission since @FormatDate(_profile.Mission.StartsAt)
                     </p>
                 }
+                <p>Datos del reloj, no validados clínicamente</p>
 
                 @if (_forbidden)
                 {
@@ -160,6 +171,7 @@
     private AstronautProfile? _profile;
     private Guid _selectedAstronautId;
     private ChartRange _range = ChartRange.Days30;
+    private string _source = string.Empty;
     private bool _loadingCrew = true;
     private bool _loadingCharts;
     private bool _forbidden;
@@ -230,9 +242,12 @@
             }
 
             var (from, to) = RangeBounds();
+            ReadingSource? source = Enum.TryParse<ReadingSource>(_source, true, out var parsedSource)
+                ? parsedSource
+                : null;
             var results = await Task.WhenAll(
                 Indicators.Select(indicator =>
-                    Client.GetSeriesAsync(_selectedAstronautId, indicator, from, to)));
+                    Client.GetSeriesAsync(_selectedAstronautId, indicator, from, to, source)));
 
             _series.Clear();
             for (var index = 0; index < Indicators.Length; index++)
@@ -322,7 +337,8 @@
                         t = point.T.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
                         value = point.Value,
                         secondaryValue = point.SecondaryValue,
-                        status = StatusKey(point.Status)
+                        status = StatusKey(point.Status),
+                        source = SourceKey(point.Source)
                     })
                 });
         }
@@ -360,6 +376,9 @@
         HealthStatus.Critical => "critical",
         _ => "normal"
     };
+
+    private static string SourceKey(ReadingSource source) =>
+        source == ReadingSource.Wearable ? "wearable" : "manual";
 
     private static string FormatDate(DateTimeOffset timestamp) =>
         timestamp.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.CurrentCulture);

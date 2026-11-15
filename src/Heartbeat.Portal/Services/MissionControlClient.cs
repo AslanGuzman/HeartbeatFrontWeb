@@ -37,6 +37,9 @@ public sealed class MissionControlClient(
         return response;
     }
 
+    public Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default) =>
+        tokenRefresher.GetAccessTokenAsync(cancellationToken);
+
     public Task<HttpResponseMessage> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken = default) =>
@@ -105,6 +108,7 @@ public sealed class MissionControlClient(
         HealthStatus? status = null,
         int page = 1,
         int pageSize = 20,
+        ReadingSource? source = null,
         CancellationToken cancellationToken = default)
     {
         var query = new List<string>
@@ -129,6 +133,11 @@ public sealed class MissionControlClient(
             query.Add($"status={Uri.EscapeDataString(statusName)}");
         }
 
+        if (source is not null)
+        {
+            query.Add($"source={SourceName(source.Value)}");
+        }
+
         var uri = $"crew/{astronautId:D}/checkups?{string.Join("&", query)}";
         return GetAsync<Paged<CheckUpDto>>(uri, cancellationToken);
     }
@@ -146,6 +155,7 @@ public sealed class MissionControlClient(
         IndicatorType indicator,
         DateTimeOffset? from = null,
         DateTimeOffset? to = null,
+        ReadingSource? source = null,
         CancellationToken cancellationToken = default)
     {
         var query = new List<string>
@@ -163,10 +173,18 @@ public sealed class MissionControlClient(
             query.Add($"to={Uri.EscapeDataString(to.Value.ToString("O", CultureInfo.InvariantCulture))}");
         }
 
+        if (source is not null)
+        {
+            query.Add($"source={SourceName(source.Value)}");
+        }
+
         return GetAsync<SeriesDto>(
             $"crew/{astronautId:D}/series?{string.Join("&", query)}",
             cancellationToken);
     }
+
+    private static string SourceName(ReadingSource source) =>
+        Uri.EscapeDataString(JsonNamingPolicy.CamelCase.ConvertName(source.ToString()));
 
     public Task<JsonDocument> GetReferenceRangesAsync(CancellationToken cancellationToken = default) =>
         GetAsync<JsonDocument>("reference-ranges", cancellationToken);

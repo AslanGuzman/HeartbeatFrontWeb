@@ -51,42 +51,63 @@ export function render(canvasId, payload) {
 
     Chart.getChart(canvas)?.destroy();
 
-    const datasets = [{
-        label: payload.unit ? `Valor (${payload.unit})` : 'Valor',
-        data: payload.points.map(point => ({
-            x: Date.parse(point.t),
-            y: point.value
-        })),
-        borderColor: '#110559',
-        backgroundColor: '#110559',
-        pointBackgroundColor: payload.points.map(point => statusColors[point.status] ?? statusColors.normal),
-        pointBorderColor: '#FFFFFF',
-        pointBorderWidth: 1.5,
-        pointRadius: payload.points.map(point =>
-            point.status === 'watch' || point.status === 'critical' ? 4 : payload.points.length === 1 ? 3 : 0),
-        pointStyle: payload.points.map(point => point.status === 'critical' ? 'rectRot' : 'circle'),
-        pointHoverRadius: 5,
-        pointHitRadius: 10,
-        borderWidth: 2,
-        tension: 0
-    }];
-
-    if (payload.points.some(point => point.secondaryValue != null)) {
-        datasets.push({
-            label: 'Secundario',
-            data: payload.points.map(point => ({
+    const sourceStyles = {
+        manual: { label: 'Manual', color: '#110559', dash: [] },
+        wearable: { label: 'Reloj', color: '#6D28D9', dash: [6, 3] }
+    };
+    const sources = [...new Set(payload.points.map(point => point.source ?? 'manual'))];
+    const datasets = sources.map(source => {
+        const style = sourceStyles[source] ?? sourceStyles.manual;
+        const points = payload.points.filter(point => (point.source ?? 'manual') === source);
+        return {
+            label: payload.unit ? `${style.label} (${payload.unit})` : style.label,
+            source,
+            data: points.map(point => ({
                 x: Date.parse(point.t),
-                y: point.secondaryValue
+                y: point.value,
+                status: point.status
             })),
-            borderColor: '#6B7280',
-            backgroundColor: '#6B7280',
-            pointRadius: payload.points.length === 1 ? 3 : 0,
+            borderColor: style.color,
+            backgroundColor: style.color,
+            pointBackgroundColor: points.map(point => statusColors[point.status] ?? statusColors.normal),
+            pointBorderColor: '#FFFFFF',
+            pointBorderWidth: 1.5,
+            pointRadius: points.map(point =>
+                point.status === 'watch' || point.status === 'critical' ? 4 : points.length === 1 ? 3 : 0),
+            pointStyle: points.map(point => point.status === 'critical' ? 'rectRot' : 'circle'),
             pointHoverRadius: 5,
             pointHitRadius: 10,
-            borderWidth: 1.5,
-            borderDash: [4, 3],
+            borderWidth: 2,
+            borderDash: style.dash,
             tension: 0
-        });
+        };
+    });
+
+    if (payload.points.some(point => point.secondaryValue != null)) {
+        for (const source of sources) {
+            const style = sourceStyles[source] ?? sourceStyles.manual;
+            const points = payload.points.filter(
+                point => (point.source ?? 'manual') === source);
+            if (points.some(point => point.secondaryValue != null)) {
+                datasets.push({
+                    label: `${style.label} · secundario`,
+                    source,
+                    data: points.map(point => ({
+                        x: Date.parse(point.t),
+                        y: point.secondaryValue,
+                        status: point.status
+                    })),
+                    borderColor: style.color,
+                    backgroundColor: style.color,
+                    pointRadius: points.length === 1 ? 3 : 0,
+                    pointHoverRadius: 5,
+                    pointHitRadius: 10,
+                    borderWidth: 1.5,
+                    borderDash: [2, 3],
+                    tension: 0
+                });
+            }
+        }
     }
 
     new Chart(canvas, {
@@ -101,7 +122,7 @@ export function render(canvasId, payload) {
             layout: { padding: { top: 8, right: 8 } },
             plugins: {
                 legend: {
-                    display: datasets.length > 1,
+                    display: true,
                     position: 'bottom',
                     labels: {
                         boxWidth: 16,

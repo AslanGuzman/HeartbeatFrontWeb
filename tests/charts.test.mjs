@@ -63,3 +63,25 @@ test('a single normal reading remains visible', () => {
     });
     assert.deepEqual(config.data.datasets[0].pointRadius, [3]);
 });
+
+test('keeps manual and wearable readings separate with their visual styles', () => {
+    render('chart-test', {
+        unit: 'bpm',
+        points: [
+            { t: '2026-11-01T00:00:00Z', value: 70, status: 'normal', source: 'manual' },
+            { t: '2026-11-02T00:00:00Z', value: 110, secondaryValue: 80, status: 'critical', source: 'wearable' }
+        ]
+    });
+    const [manual, wearable, secondary] = config.data.datasets;
+    assert.equal(manual.source, 'manual');
+    assert.deepEqual(manual.data.map(point => point.y), [70]);
+    assert.deepEqual(manual.pointRadius, [3]);
+    assert.equal(wearable.source, 'wearable');
+    assert.deepEqual(wearable.data.map(point => point.y), [110]);
+    assert.deepEqual(wearable.borderDash, [6, 3]);
+    assert.deepEqual(wearable.pointRadius, [4]);
+    assert.deepEqual(wearable.pointStyle, ['rectRot']);
+    assert.equal(secondary.source, 'wearable');
+    assert.deepEqual(secondary.data.map(point => point.y), [80]);
+    assert.equal(config.options.plugins.legend.display, true);
+});
