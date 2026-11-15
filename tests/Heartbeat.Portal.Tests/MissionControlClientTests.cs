@@ -463,6 +463,76 @@ public sealed class MissionControlClientTests
             exception.Message);
     }
 
+    [TestMethod]
+    public async Task SeriesEndpointSendsIndicatorAndRangeAndReadsBands()
+    {
+        var now = new DateTimeOffset(2026, 11, 14, 12, 0, 0, TimeSpan.Zero);
+        var astronautId = Guid.NewGuid();
+        string? requestedUri = null;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            requestedUri = request.RequestUri!.PathAndQuery;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(
+                    new
+                    {
+                        indicator = "bloodPressure",
+                        unit = "mmHg",
+                        bands = new[]
+                        {
+                            new { status = "normal", min = (decimal?)50, max = (decimal?)120 },
+                            new { status = "watch", min = (decimal?)120, max = (decimal?)140 }
+                        },
+                        points = new[]
+                        {
+                            new
+                            {
+                                t = now.AddDays(-1),
+                                value = 118m,
+                                secondaryValue = (decimal?)76,
+                                status = "normal"
+                            },
+                            new
+                            {
+                                t = now,
+                                value = 134m,
+                                secondaryValue = (decimal?)88,
+                                status = "watch"
+                            }
+                        }
+                    },
+                    options: new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var series = await client.GetSeriesAsync(
+            astronautId,
+            IndicatorType.BloodPressure,
+            now.AddDays(-7),
+            now);
+
+        Assert.AreEqual(IndicatorType.BloodPressure, series.Indicator);
+        Assert.AreEqual("mmHg", series.Unit);
+        Assert.HasCount(2, series.Bands);
+        Assert.AreEqual(HealthStatus.Watch, series.Bands[1].Status);
+        Assert.HasCount(2, series.Points);
+        Assert.AreEqual(88m, series.Points[1].SecondaryValue);
+        Assert.AreEqual(HealthStatus.Watch, series.Points[1].Status);
+        Assert.IsTrue(requestedUri.Contains("indicator=bloodPressure", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("from=", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("to=", StringComparison.Ordinal));
+    }
+
     private sealed class StubSessionStore : IMissionControlSessionStore
     {
         public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

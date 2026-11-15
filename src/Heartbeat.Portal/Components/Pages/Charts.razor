@@ -1,0 +1,384 @@
+@page "/charts"
+@implements IAsyncDisposable
+@using System.Globalization
+@using System.Net
+@using System.Text.Json
+@using Heartbeat.Shared
+@using Microsoft.JSInterop
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+@inject IJSRuntime JS
+
+<PageTitle>Heartbeat | Tendencias</PageTitle>
+
+<RequirePermission Permission="@Permissions.VitalsHistory">
+    <ChildContent>
+        <section class="charts-page" aria-labelledby="charts-title">
+            <header class="charts-heading">
+                <div>
+                    <h1 id="charts-title">Tendencias por indicador</h1>
+                    <p>Evolución de la tripulación con las bandas de referencia.</p>
+                </div>
+            </header>
+
+            @if (!Session.HasPermission(Permissions.CrewView))
+            {
+                <div class="charts-state" role="alert">
+                    <h2>Sin permiso para ver la tripulación</h2>
+                    <p>Tu cuenta necesita el permiso crew.view para elegir un astronauta.</p>
+                </div>
+            }
+            else if (_loadingCrew)
+            {
+                <div class="charts-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando tripulación…</span>
+                </div>
+            }
+            else if (_crewError is not null)
+            {
+                <div class="charts-state" role="alert">
+                    <h2>No se pudo cargar la tripulación</h2>
+                    <p>@_crewError</p>
+                    <button class="charts-button" type="button" @onclick="LoadCrewAsync">Reintentar</button>
+                </div>
+            }
+            else if (_crew is null || _crew.Length == 0)
+            {
+                <div class="charts-state">
+                    <h2>No hay astronautas registrados</h2>
+                    <p>Las tendencias aparecerán cuando exista tripulación.</p>
+                </div>
+            }
+            else
+            {
+                <div class="charts-controls">
+                    <label class="charts-astronaut">
+                        <span>Astronauta</span>
+                        <select @bind="_selectedAstronautId"
+                                @bind:after="LoadChartsAsync"
+                                disabled="@_loadingCharts">
+                            @foreach (var astronaut in _crew)
+                            {
+                                <option value="@astronaut.AstronautId">@AstronautLabel(astronaut)</option>
+                            }
+                        </select>
+                    </label>
+
+                    <div class="charts-ranges" role="group" aria-label="Rango de tiempo">
+                        @foreach (var chartRange in Ranges)
+                        {
+                            <button class="charts-range @(_range == chartRange ? "charts-range--active" : "")"
+                                    type="button"
+                                    aria-pressed="@((_range == chartRange).ToString().ToLowerInvariant())"
+                                    disabled="@_loadingCharts"
+                                    @onclick="() => ChangeRangeAsync(chartRange)">@RangeLabel(chartRange)</button>
+                        }
+                    </div>
+                </div>
+
+                @if (_profile is not null)
+                {
+                    <p class="charts-context">
+                        @_profile.DisplayName · @_profile.Mission.Name ·
+                        Misión desde @FormatDate(_profile.Mission.StartsAt)
+                    </p>
+                }
+
+                @if (_forbidden)
+                {
+                    <div class="charts-state" role="alert">
+                        <h2>Sin permiso para consultar las tendencias</h2>
+                        <p>Tu cuenta no tiene el permiso vitals.history.</p>
+                    </div>
+                }
+                else if (_chartsError is not null)
+                {
+                    <div class="charts-state" role="alert">
+                        <h2>No se pudieron cargar las tendencias</h2>
+                        <p>@_chartsError</p>
+                        <button class="charts-button" type="button" @onclick="LoadChartsAsync">Reintentar</button>
+                    </div>
+                }
+                else if (_loadingCharts)
+                {
+                    <div class="charts-state" role="status" aria-busy="true">
+                        <span class="session-spinner" aria-hidden="true"></span>
+                        <span>Cargando tendencias…</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="charts-grid">
+                        @foreach (var indicator in Indicators)
+                        {
+                            var series = _series.GetValueOrDefault(indicator);
+                            <article @key="indicator" class="chart-card">
+                                <header>
+                                    <h2>@IndicatorName(indicator)</h2>
+                                    @if (series is not null)
+                                    {
+                                        <span class="chart-unit">@series.Unit</span>
+                                    }
+                                </header>
+
+                                @if (series is null || series.Points.Count == 0)
+                                {
+                                    <p class="chart-empty">Sin datos en este rango.</p>
+                                }
+                                else
+                                {
+                                    <div class="chart-frame">
+                                        <canvas id="@ChartId(indicator)"
+                                                role="img"
+                                                aria-label="@($"Gráfica de {IndicatorName(indicator)}")"></canvas>
+                                    </div>
+                                }
+                            </article>
+                        }
+                    </div>
+                }
+            }
+        </section>
+    </ChildContent>
+</RequirePermission>
+
+@code {
+    private enum ChartRange
+    {
+        Days7,
+        Days30,
+        Mission
+    }
+
+    private static readonly IndicatorType[] Indicators = Enum.GetValues<IndicatorType>();
+    private static readonly ChartRange[] Ranges =
+        [ChartRange.Days7, ChartRange.Days30, ChartRange.Mission];
+
+    private readonly Dictionary<IndicatorType, SeriesDto?> _series = [];
+    private CrewSummaryDto[]? _crew;
+    private AstronautProfile? _profile;
+    private Guid _selectedAstronautId;
+    private ChartRange _range = ChartRange.Days30;
+    private bool _loadingCrew = true;
+    private bool _loadingCharts;
+    private bool _forbidden;
+    private bool _renderPending;
+    private string? _crewError;
+    private string? _chartsError;
+    private IJSObjectReference? _chartsModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.HasPermission(Permissions.CrewView))
+        {
+            _loadingCrew = false;
+            return;
+        }
+
+        await LoadCrewAsync();
+    }
+
+    private async Task LoadCrewAsync()
+    {
+        _loadingCrew = true;
+        _crewError = null;
+
+        try
+        {
+            _crew = await Client.GetCrewAsync();
+            if (_crew.Length > 0)
+            {
+                _selectedAstronautId = _crew[0].AstronautId;
+                await LoadChartsAsync();
+            }
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _crewError = "Tu cuenta no tiene permiso para ver la tripulación.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _crewError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loadingCrew = false;
+        }
+    }
+
+    private async Task LoadChartsAsync()
+    {
+        if (_selectedAstronautId == Guid.Empty)
+        {
+            return;
+        }
+
+        _loadingCharts = true;
+        _forbidden = false;
+        _chartsError = null;
+
+        try
+        {
+            if (_profile?.Id != _selectedAstronautId)
+            {
+                _profile = await Client.GetCrewMemberAsync(_selectedAstronautId);
+            }
+
+            var (from, to) = RangeBounds();
+            var results = await Task.WhenAll(
+                Indicators.Select(indicator =>
+                    Client.GetSeriesAsync(_selectedAstronautId, indicator, from, to)));
+
+            _series.Clear();
+            for (var index = 0; index < Indicators.Length; index++)
+            {
+                _series[Indicators[index]] = results[index];
+            }
+
+            _renderPending = true;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+            _series.Clear();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _chartsError = "Comprueba la conexión e inténtalo de nuevo.";
+            _series.Clear();
+        }
+        finally
+        {
+            _loadingCharts = false;
+        }
+    }
+
+    private (DateTimeOffset From, DateTimeOffset To) RangeBounds()
+    {
+        var to = DateTimeOffset.UtcNow;
+        var from = _range switch
+        {
+            ChartRange.Days7 => to.AddDays(-7),
+            ChartRange.Days30 => to.AddDays(-30),
+            _ => _profile?.Mission.StartsAt ?? to.AddDays(-30)
+        };
+
+        return (from, to);
+    }
+
+    private async Task ChangeRangeAsync(ChartRange chartRange)
+    {
+        if (_range == chartRange)
+        {
+            return;
+        }
+
+        _range = chartRange;
+        await LoadChartsAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_renderPending || _series.Count == 0)
+        {
+            return;
+        }
+
+        _renderPending = false;
+
+        _chartsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./charts.js");
+        await _chartsModule.InvokeVoidAsync("destroyAll");
+
+        foreach (var (indicator, series) in _series)
+        {
+            if (series is null || series.Points.Count == 0)
+            {
+                continue;
+            }
+
+            await _chartsModule.InvokeVoidAsync(
+                "render",
+                ChartId(indicator),
+                new
+                {
+                    unit = series.Unit,
+                    bands = series.Bands.Select(band => new
+                    {
+                        status = StatusKey(band.Status),
+                        min = band.Min,
+                        max = band.Max
+                    }),
+                    points = series.Points.Select(point => new
+                    {
+                        t = point.T.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture),
+                        value = point.Value,
+                        secondaryValue = point.SecondaryValue,
+                        status = StatusKey(point.Status)
+                    })
+                });
+        }
+    }
+
+    private static string ChartId(IndicatorType indicator) => $"chart-{indicator}";
+
+    private static string AstronautLabel(CrewSummaryDto astronaut) =>
+        string.IsNullOrWhiteSpace(astronaut.CallSign)
+            ? astronaut.DisplayName
+            : $"{astronaut.DisplayName} ({astronaut.CallSign})";
+
+    private static string RangeLabel(ChartRange range) => range switch
+    {
+        ChartRange.Days7 => "7 días",
+        ChartRange.Days30 => "30 días",
+        _ => "Misión"
+    };
+
+    private static string IndicatorName(IndicatorType indicator) => indicator switch
+    {
+        IndicatorType.BloodPressure => "Presión arterial",
+        IndicatorType.HeartRate => "Frecuencia cardíaca",
+        IndicatorType.BloodSugar => "Glucosa en sangre",
+        IndicatorType.BodyTemperature => "Temperatura corporal",
+        IndicatorType.Sleep => "Sueño",
+        IndicatorType.Mood => "Estado de ánimo",
+        _ => indicator.ToString()
+    };
+
+    private static string StatusKey(HealthStatus status) => status switch
+    {
+        HealthStatus.Normal => "normal",
+        HealthStatus.Watch => "watch",
+        HealthStatus.Critical => "critical",
+        _ => "normal"
+    };
+
+    private static string FormatDate(DateTimeOffset timestamp) =>
+        timestamp.ToLocalTime().ToString("dd/MM/yyyy", CultureInfo.CurrentCulture);
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_chartsModule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _chartsModule.InvokeVoidAsync("destroyAll");
+            await _chartsModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is already gone; nothing left to clean up.
+        }
+    }
+}
