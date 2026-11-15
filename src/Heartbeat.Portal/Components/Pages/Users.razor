@@ -7,7 +7,7 @@
 
 <PageTitle>Heartbeat | Administración de usuarios</PageTitle>
 
-<RequirePermission Permission="@Permissions.UsersManage">
+<RequirePermission Permission="@Permissions.UsersView">
     <ChildContent>
         <section class="users-page" aria-labelledby="users-title">
             <header class="users-heading">
@@ -291,6 +291,12 @@
             }
         </section>
     </ChildContent>
+    <NotAuthorized>
+        <section class="users-state" role="alert">
+            <h1>Sin permiso para ver los usuarios</h1>
+            <p>Tu cuenta no tiene el permiso users.view.</p>
+        </section>
+    </NotAuthorized>
 </RequirePermission>
 
 @code {

@@ -333,6 +333,108 @@ public sealed class MissionControlClientTests
     }
 
     [TestMethod]
+    public async Task MessageEndpointsListSendAndMarkMessagesRead()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var astronautId = Guid.NewGuid();
+        var messageId = Guid.NewGuid();
+        var requests = new List<(string Method, string Uri, string? Token, string? Body)>();
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            var body = request.Content is null
+                ? null
+                : await request.Content.ReadAsStringAsync(cancellationToken);
+            requests.Add((
+                request.Method.Method,
+                request.RequestUri!.PathAndQuery,
+                request.Headers.Authorization?.Parameter,
+                body));
+
+            if (request.Method == HttpMethod.Get)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = JsonContent.Create(new
+                    {
+                        items = new[]
+                        {
+                            new
+                            {
+                                id = messageId,
+                                direction = "toMissionControl",
+                                kind = "report",
+                                checkUpId = (Guid?)null,
+                                subject = "Reporte de estado",
+                                body = "Todo en orden.",
+                                createdAt = now,
+                                receivedAt = now,
+                                readAt = (DateTimeOffset?)null,
+                                senderName = "Ana Rivera"
+                            }
+                        },
+                        page = 1,
+                        pageSize = 50,
+                        total = 1
+                    })
+                };
+            }
+
+            if (request.RequestUri!.AbsolutePath.EndsWith("/read", StringComparison.Ordinal))
+            {
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = JsonContent.Create(new
+                {
+                    id = Guid.NewGuid(),
+                    direction = "toAstronaut",
+                    kind = "message",
+                    checkUpId = (Guid?)null,
+                    subject = "Respuesta",
+                    body = "Gracias por el reporte.",
+                    createdAt = now,
+                    receivedAt = (DateTimeOffset?)null,
+                    readAt = (DateTimeOffset?)null,
+                    senderName = "Mission Control"
+                })
+            };
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var messages = await client.GetCrewMessagesAsync(astronautId);
+        var sent = await client.SendCrewMessageAsync(
+            astronautId,
+            new SendMessageRequest("Respuesta", "Gracias por el reporte."));
+        await client.MarkMessageReadAsync(messageId);
+
+        Assert.AreEqual(MessageDirection.ToMissionControl, messages.Items[0].Direction);
+        Assert.AreEqual(MessageKind.Message, sent.Kind);
+        Assert.HasCount(3, requests);
+        Assert.AreEqual(
+            $"/api/mc/v1/crew/{astronautId:D}/messages?page=1&pageSize=50",
+            requests[0].Uri);
+        Assert.AreEqual(
+            $"/api/mc/v1/crew/{astronautId:D}/messages",
+            requests[1].Uri);
+        Assert.AreEqual(
+            $"/api/mc/v1/messages/{messageId:D}/read",
+            requests[2].Uri);
+        using var sendBody = JsonDocument.Parse(requests[1].Body!);
+        Assert.AreEqual("Respuesta", sendBody.RootElement.GetProperty("subject").GetString());
+        Assert.IsTrue(requests.All(request => request.Token == "access-token"));
+    }
+
+    [TestMethod]
     public async Task AlertCounterRefreshesTheOpenAlertTotal()
     {
         var now = DateTimeOffset.UtcNow;
@@ -528,7 +630,7 @@ public sealed class MissionControlClientTests
         Assert.HasCount(2, series.Points);
         Assert.AreEqual(88m, series.Points[1].SecondaryValue);
         Assert.AreEqual(HealthStatus.Watch, series.Points[1].Status);
-        Assert.IsTrue(requestedUri.Contains("indicator=bloodPressure", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri!.Contains("indicator=bloodPressure", StringComparison.Ordinal));
         Assert.IsTrue(requestedUri.Contains("from=", StringComparison.Ordinal));
         Assert.IsTrue(requestedUri.Contains("to=", StringComparison.Ordinal));
     }

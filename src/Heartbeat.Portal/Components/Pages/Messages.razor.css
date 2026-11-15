@@ -1,0 +1,218 @@
+.messages-page {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.messages-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.messages-heading h1,
+.messages-heading p,
+.message-card h2,
+.message-card p,
+.message-compose h2 {
+    margin: 0;
+}
+
+.messages-heading h1 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    letter-spacing: -0.04em;
+}
+
+.messages-heading p {
+    margin-top: 0.45rem;
+    color: var(--text-secondary);
+}
+
+.messages-total {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.messages-astronaut,
+.message-compose label {
+    display: grid;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.messages-astronaut {
+    max-width: 24rem;
+}
+
+.messages-astronaut select,
+.message-compose input,
+.message-compose textarea {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.message-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.message-card,
+.message-compose {
+    padding: 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.8rem;
+    background: var(--surface);
+}
+
+.message-card--incoming {
+    border-left: 4px solid var(--brand-blue);
+}
+
+.message-card--outgoing {
+    border-left: 4px solid var(--brand-red);
+}
+
+.message-card-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.message-card-heading h2 {
+    font-size: 1rem;
+}
+
+.message-card-heading p {
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.message-kind,
+.message-read {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.message-body {
+    margin-top: 1rem !important;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.messages-button,
+.messages-action {
+    border: 0;
+    border-radius: 0.55rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    cursor: pointer;
+}
+
+.messages-button {
+    padding: 0.65rem 0.9rem;
+}
+
+.messages-action {
+    margin-top: 1rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.messages-button:hover:not(:disabled),
+.messages-action:hover:not(:disabled) {
+    background: #261A6B;
+}
+
+.messages-button:disabled,
+.messages-action:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.messages-button--secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+}
+
+.messages-button--secondary:hover:not(:disabled) {
+    background: var(--surface-raised);
+}
+
+.messages-state {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+    padding: 2rem;
+    border: 1px dashed var(--border);
+    border-radius: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.messages-state h1,
+.messages-state h2,
+.messages-state p {
+    margin: 0;
+}
+
+.messages-state h1,
+.messages-state h2 {
+    color: var(--text-primary);
+}
+
+.messages-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.messages-pagination div {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.message-compose {
+    display: grid;
+    gap: 1rem;
+    max-width: 48rem;
+}
+
+.message-compose h2 {
+    font-size: 1.15rem;
+}
+
+.messages-error {
+    margin: 0;
+    color: var(--brand-red);
+}
+
+.messages-success {
+    margin: 0;
+    color: var(--status-normal);
+}
+
+@media (max-width: 48rem) {
+    .messages-heading,
+    .message-card-heading,
+    .messages-pagination {
+        align-items: start;
+        flex-direction: column;
+    }
+
+    .messages-heading {
+        display: grid;
+    }
+}
