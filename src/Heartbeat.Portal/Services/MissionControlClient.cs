@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -54,6 +55,57 @@ public sealed class MissionControlClient(
         Guid astronautId,
         CancellationToken cancellationToken = default) =>
         GetAsync<AstronautProfile>($"crew/{astronautId:D}", cancellationToken);
+
+    public Task<AstronautStatusDto> GetAstronautStatusAsync(
+        Guid astronautId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<AstronautStatusDto>($"crew/{astronautId:D}/status", cancellationToken);
+
+    public Task<Paged<CheckUpDto>> GetCheckUpsAsync(
+        Guid astronautId,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        HealthStatus? status = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>
+        {
+            $"page={page.ToString(CultureInfo.InvariantCulture)}",
+            $"pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}"
+        };
+
+        if (from is not null)
+        {
+            query.Add($"from={Uri.EscapeDataString(from.Value.ToString("O", CultureInfo.InvariantCulture))}");
+        }
+
+        if (to is not null)
+        {
+            query.Add($"to={Uri.EscapeDataString(to.Value.ToString("O", CultureInfo.InvariantCulture))}");
+        }
+
+        if (status is not null)
+        {
+            var statusName = JsonNamingPolicy.CamelCase.ConvertName(status.Value.ToString());
+            query.Add($"status={Uri.EscapeDataString(statusName)}");
+        }
+
+        var uri = $"crew/{astronautId:D}/checkups?{string.Join("&", query)}";
+        return GetAsync<Paged<CheckUpDto>>(uri, cancellationToken);
+    }
+
+    public Task<CheckUpDetailDto> GetCheckUpDetailAsync(
+        Guid astronautId,
+        Guid checkUpId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<CheckUpDetailDto>(
+            $"crew/{astronautId:D}/checkups/{checkUpId:D}",
+            cancellationToken);
+
+    public Task<JsonDocument> GetReferenceRangesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<JsonDocument>("reference-ranges", cancellationToken);
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
         where T : class

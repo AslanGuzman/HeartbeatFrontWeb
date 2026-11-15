@@ -86,6 +86,160 @@ public sealed class MissionControlClientTests
         Assert.IsTrue(requests.All(request => request.Token == "access-token"));
     }
 
+    [TestMethod]
+    public async Task VitalsEndpointsSendFiltersAndDeserializeContractData()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var astronautId = Guid.NewGuid();
+        var checkUpId = Guid.NewGuid();
+        var requests = new List<(string Uri, string? Token)>();
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            requests.Add((request.RequestUri!.PathAndQuery, request.Headers.Authorization?.Parameter));
+            var path = request.RequestUri.AbsolutePath;
+            HttpContent content;
+
+            if (path.EndsWith("/status", StringComparison.Ordinal))
+            {
+                content = JsonContent.Create(new
+                {
+                    astronautId,
+                    overallStatus = "watch",
+                    lastSyncAt = now,
+                    indicators = new[]
+                    {
+                        new
+                        {
+                            indicator = "heartRate",
+                            value = 64m,
+                            secondaryValue = (decimal?)null,
+                            unit = "bpm",
+                            status = "normal",
+                            label = "Normal",
+                            recordedAt = now,
+                            checkUpId
+                        }
+                    }
+                });
+            }
+            else if (path.EndsWith("/checkups", StringComparison.Ordinal))
+            {
+                content = JsonContent.Create(new
+                {
+                    items = new[]
+                    {
+                        new
+                        {
+                            id = checkUpId,
+                            recordedAt = now,
+                            receivedAt = now,
+                            overallStatus = "watch",
+                            rangesVersion = "2026.11.14-1",
+                            note = (string?)null,
+                            supersedesId = (Guid?)null,
+                            readings = new[]
+                            {
+                                new
+                                {
+                                    id = Guid.NewGuid(),
+                                    indicator = "heartRate",
+                                    value = 64m,
+                                    secondaryValue = (decimal?)null,
+                                    status = "normal",
+                                    bandIds = new[] { "hr-normal" }
+                                }
+                            }
+                        }
+                    },
+                    page = 2,
+                    pageSize = 20,
+                    total = 21
+                });
+            }
+            else if (path.Contains("/checkups/", StringComparison.Ordinal))
+            {
+                content = JsonContent.Create(new
+                {
+                    id = checkUpId,
+                    recordedAt = now,
+                    receivedAt = now,
+                    overallStatus = "watch",
+                    rangesVersion = "2026.11.14-1",
+                    note = (string?)null,
+                    supersedesId = (Guid?)null,
+                    readings = Array.Empty<object>(),
+                    evaluations = new[]
+                    {
+                        new
+                        {
+                            indicator = "heartRate",
+                            status = "watch",
+                            bandIds = new[] { "hr-watch-high" },
+                            label = "Fast",
+                            guidance = new[] { "Rest and measure again." },
+                            escalation = (object?)null,
+                            sources = new[]
+                            {
+                                new
+                                {
+                                    title = "Pulse",
+                                    url = "https://example.test/pulse"
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            else
+            {
+                content = new StringContent(ReferenceRanges.Json, System.Text.Encoding.UTF8, "application/json");
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        session.SetUser(new PortalUserDto(
+            Guid.NewGuid(),
+            "surgeon",
+            "surgeon@heartbeat.test",
+            "Flight Surgeon",
+            new RoleDto(Guid.NewGuid(), "Flight Surgeon", true, 1, [Permissions.VitalsView, Permissions.VitalsHistory]),
+            true,
+            [Permissions.VitalsView, Permissions.VitalsHistory]));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var status = await client.GetAstronautStatusAsync(astronautId);
+        var history = await client.GetCheckUpsAsync(
+            astronautId,
+            new DateTimeOffset(2026, 11, 14, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2026, 11, 14, 23, 59, 59, TimeSpan.Zero),
+            HealthStatus.Watch,
+            page: 2,
+            pageSize: 20);
+        var detail = await client.GetCheckUpDetailAsync(astronautId, checkUpId);
+        using var ranges = await client.GetReferenceRangesAsync();
+
+        Assert.AreEqual(HealthStatus.Watch, status.OverallStatus);
+        Assert.AreEqual(HealthStatus.Normal, status.Indicators[0].Status);
+        Assert.AreEqual(2, history.Page);
+        Assert.AreEqual(21, history.Total);
+        Assert.AreEqual(HealthStatus.Watch, detail.Evaluations[0].Status);
+        Assert.AreEqual("Rest and measure again.", detail.Evaluations[0].Guidance[0]);
+        Assert.AreEqual("2026.11.14-1", ranges.RootElement.GetProperty("version").GetString());
+        Assert.IsTrue(requests[1].Uri.Contains("page=2", StringComparison.Ordinal));
+        Assert.IsTrue(requests[1].Uri.Contains("status=watch", StringComparison.Ordinal));
+        Assert.IsTrue(requests[1].Uri.Contains("from=", StringComparison.Ordinal));
+        Assert.IsTrue(requests.All(request => request.Token == "access-token"));
+        Assert.HasCount(4, requests);
+    }
+
     private sealed class StubSessionStore : IMissionControlSessionStore
     {
         public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
