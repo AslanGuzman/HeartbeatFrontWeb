@@ -186,6 +186,114 @@ public sealed class MissionControlClient(
                 "The Mission Control API returned an empty response.");
     }
 
+    public Task<Paged<PortalUserDto>> GetUsersAsync(
+        string state = "all",
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"users?state={Uri.EscapeDataString(state)}" +
+                  $"&page={page.ToString(CultureInfo.InvariantCulture)}" +
+                  $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
+        return GetAsync<Paged<PortalUserDto>>(uri, cancellationToken);
+    }
+
+    public async Task<PortalUserDto> CreateUserAsync(
+        CreateUserRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Post,
+            "users")
+        {
+            Content = JsonContent.Create(request, options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<PortalUserDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
+    public async Task<PortalUserDto> UpdateUserAsync(
+        Guid id,
+        UpdateUserRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"users/{id:D}")
+        {
+            Content = JsonContent.Create(request, options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<PortalUserDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
+    public async Task DisableUserAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"users/{id:D}/disable");
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task EnableUserAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"users/{id:D}/enable");
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    public Task<Paged<RoleDto>> GetRolesAsync(
+        int page = 1,
+        int pageSize = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"roles?page={page.ToString(CultureInfo.InvariantCulture)}" +
+                  $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
+        return GetAsync<Paged<RoleDto>>(uri, cancellationToken);
+    }
+
+    public async Task<RoleDto> CreateRoleAsync(
+        string name,
+        IReadOnlyList<string> permissions,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new SaveRoleRequest(name, permissions);
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Post,
+            "roles")
+        {
+            Content = JsonContent.Create(request, options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<RoleDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
         where T : class
     {
