@@ -107,6 +107,40 @@ public sealed class MissionControlClient(
     public Task<JsonDocument> GetReferenceRangesAsync(CancellationToken cancellationToken = default) =>
         GetAsync<JsonDocument>("reference-ranges", cancellationToken);
 
+    public Task<Paged<AlertDto>> GetAlertsAsync(
+        string state = "open",
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"alerts?state={Uri.EscapeDataString(state)}" +
+                  $"&page={page.ToString(CultureInfo.InvariantCulture)}" +
+                  $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
+        return GetAsync<Paged<AlertDto>>(uri, cancellationToken);
+    }
+
+    public async Task<AlertDto> AcknowledgeAlertAsync(
+        Guid alertId,
+        string note,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"alerts/{alertId:D}/acknowledge")
+        {
+            Content = JsonContent.Create(
+                new AcknowledgeAlertRequest(note),
+                options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<AlertDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
         where T : class
     {
