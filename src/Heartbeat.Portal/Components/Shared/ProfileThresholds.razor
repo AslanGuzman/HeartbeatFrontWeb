@@ -1,0 +1,96 @@
+@inject IStringLocalizer<SharedResource> T
+
+<section class="profile-thresholds" aria-labelledby="profile-thresholds-title">
+    <header>
+        <h3 id="profile-thresholds-title">@T["Limits used in {0}", Profile.Name]</h3>
+        <p>@Profile.Description</p>
+        <small>
+            @T["Simulated data"] · @T["Estimated limits (heuristic)"] ·
+            @if (Profile.Source.Url is { IsAbsoluteUri: true } url)
+            {
+                <a href="@url.AbsoluteUri" target="_blank" rel="noopener noreferrer">@Profile.Source.Title</a>
+            }
+            else
+            {
+                @Profile.Source.Title
+            }
+        </small>
+        <small>@T["These ranges describe the conditions of the environment. They are not a medical diagnosis."]</small>
+    </header>
+
+    @if (Overridden.Count == 0)
+    {
+        <p class="profile-thresholds-note">@T["This profile uses the standard reference limits."]</p>
+    }
+    else
+    {
+        @foreach (var hazard in Overridden)
+        {
+            <div class="profile-hazard">
+                <h4>@HazardLabel(hazard.Hazard)</h4>
+                <ul>
+                    @foreach (var indicator in hazard.Indicators)
+                    {
+                        <li>
+                            <strong>@indicator.Name</strong>
+                            <span class="profile-bands">
+                                @foreach (var band in indicator.Bands)
+                                {
+                                    <span class="profile-band profile-band--@StatusKey(band.Status)">
+                                        <span aria-hidden="true"></span>@StatusLabel(band.Status): @BandText(band, indicator.Unit)
+                                    </span>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public DomainProfileResponse Profile { get; set; } = default!;
+
+    // Only the indicators whose limits this profile changes; the rest keep the standard catalog limits.
+    private List<ProfileHazardResponse> Overridden => Profile.Hazards
+        .Select(h => new ProfileHazardResponse(h.Hazard, h.Indicators.Where(i => i.Overridden).ToList()))
+        .Where(h => h.Indicators.Count > 0)
+        .ToList();
+
+    private string BandText(ProfileBandResponse band, string unit) => (band.Min, band.Max) switch
+    {
+        (null, { } max) => T["below {0} {1}", Format(max), unit].Value,
+        ({ } min, null) => T["{0} {1} or more", Format(min), unit].Value,
+        ({ } min, { } max) => T["from {0} to under {1} {2}", Format(min), Format(max), unit].Value,
+        _ => T["any value"].Value
+    };
+
+    private static string Format(decimal value) => value.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture);
+
+    private string HazardLabel(Hazard hazard) => hazard switch
+    {
+        Hazard.SpaceRadiation => T["Radiation"].Value,
+        Hazard.IsolationAndConfinement => T["Isolation and confinement"].Value,
+        Hazard.DistanceFromEarth => T["Distance from Earth"].Value,
+        Hazard.GravityFields => T["Gravity"].Value,
+        Hazard.HostileClosedEnvironment => T["Closed environment"].Value,
+        _ => hazard.ToString()
+    };
+
+    private static string StatusKey(HealthStatus status) => status switch
+    {
+        HealthStatus.Normal => "normal",
+        HealthStatus.Watch => "watch",
+        HealthStatus.Critical => "critical",
+        _ => "unknown"
+    };
+
+    private string StatusLabel(HealthStatus status) => status switch
+    {
+        HealthStatus.Normal => T["Normal"].Value,
+        HealthStatus.Watch => T["Watch"].Value,
+        HealthStatus.Critical => T["Critical"].Value,
+        _ => T["No data"].Value
+    };
+}

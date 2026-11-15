@@ -54,10 +54,18 @@ public sealed class MissionControlClient(
     public Task<MissionProfileResponse> GetMissionAsync(CancellationToken cancellationToken = default) =>
         GetAsync<MissionProfileResponse>("mission", cancellationToken);
 
+    public Task<DomainProfileResponse[]> GetDomainProfilesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<DomainProfileResponse[]>("profiles", cancellationToken);
+
     public Task<RiskStatusResponse> GetCrewRiskAsync(
         Guid astronautId,
+        string? profileId = null,
         CancellationToken cancellationToken = default) =>
-        GetAsync<RiskStatusResponse>($"crew/{astronautId:D}/risk", cancellationToken);
+        GetAsync<RiskStatusResponse>(
+            string.IsNullOrWhiteSpace(profileId)
+                ? $"crew/{astronautId:D}/risk"
+                : $"crew/{astronautId:D}/risk?profile={Uri.EscapeDataString(profileId)}",
+            cancellationToken);
 
     public Task<PhantomComparisonResponse> GetPhantomComparisonAsync(
         IReadOnlyCollection<Guid>? profileIds = null,

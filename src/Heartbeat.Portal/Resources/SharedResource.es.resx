@@ -52,4 +52,23 @@
   <data name="Critical" xml:space="preserve"><value>Crítico</value></data>
   <data name="No readings" xml:space="preserve"><value>Sin lecturas</value></data>
   <data name="No data" xml:space="preserve"><value>Sin datos</value></data>
+  <data name="Environment profile" xml:space="preserve"><value>Perfil de entorno</value></data>
+  <data name="Current mission" xml:space="preserve"><value>Misión actual</value></data>
+  <data name="Environment profiles are not available right now." xml:space="preserve"><value>Los perfiles de entorno no están disponibles por ahora.</value></data>
+  <data name="Choose a profile to compare mining, Antarctica, submarine or offshore conditions." xml:space="preserve"><value>Elige un perfil para comparar las condiciones de minería, Antártida, submarino o plataforma offshore.</value></data>
+  <data name="Limits used in {0}" xml:space="preserve"><value>Límites usados en {0}</value></data>
+  <data name="Estimated limits (heuristic)" xml:space="preserve"><value>Límites estimados (heurísticos)</value></data>
+  <data name="These ranges describe the conditions of the environment. They are not a medical diagnosis." xml:space="preserve"><value>Estos rangos describen las condiciones del entorno. No son un diagnóstico médico.</value></data>
+  <data name="This profile uses the standard reference limits." xml:space="preserve"><value>Este perfil usa los límites de referencia estándar.</value></data>
+  <data name="below {0} {1}" xml:space="preserve"><value>menos de {0} {1}</value></data>
+  <data name="{0} {1} or more" xml:space="preserve"><value>{0} {1} o más</value></data>
+  <data name="from {0} to under {1} {2}" xml:space="preserve"><value>de {0} a menos de {1} {2}</value></data>
+  <data name="any value" xml:space="preserve"><value>cualquier valor</value></data>
+  <data name="Radiation" xml:space="preserve"><value>Radiación</value></data>
+  <data name="Isolation and confinement" xml:space="preserve"><value>Aislamiento y confinamiento</value></data>
+  <data name="Distance from Earth" xml:space="preserve"><value>Distancia a la Tierra</value></data>
+  <data name="Gravity" xml:space="preserve"><value>Gravedad</value></data>
+  <data name="Closed environment" xml:space="preserve"><value>Entorno cerrado</value></data>
+  <data name="Could not update the traffic lights for this profile." xml:space="preserve"><value>No se pudo actualizar el semáforo para este perfil.</value></data>
+  <data name="Traffic lights judged with the limits of {0}. Vital signs and radiation keep their standard limits." xml:space="preserve"><value>Semáforo evaluado con los límites de {0}. Los signos vitales y la radiación mantienen sus límites estándar.</value></data>
 </root>

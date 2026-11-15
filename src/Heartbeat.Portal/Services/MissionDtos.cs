@@ -38,7 +38,8 @@ public sealed record IsolationIndexResponse(
 public sealed record RiskStatusResponse(
     HealthStatus Status,
     string Explanation,
-    IReadOnlyList<HazardStatusResponse> Hazards);
+    IReadOnlyList<HazardStatusResponse> Hazards,
+    string? ProfileId = null);
 
 public sealed record HazardStatusResponse(
     Hazard Hazard,
@@ -48,3 +49,30 @@ public sealed record HazardStatusResponse(
     decimal? Limit = null,
     string? Unit = null,
     SourceLink? Source = null);
+
+// Domain profiles (CONTRACTS.md §10, GET /api/mc/v1/profiles). Thresholds come from the server catalog.
+public sealed record DomainProfileResponse(
+    string Id,
+    string Name,
+    string Description,
+    EnvironmentProfileResponse Environment,
+    string Status,
+    SourceLink Source,
+    IReadOnlyList<ProfileHazardResponse> Hazards,
+    bool Simulated = true);
+
+public sealed record ProfileHazardResponse(
+    Hazard Hazard,
+    IReadOnlyList<ProfileIndicatorResponse> Indicators);
+
+public sealed record ProfileIndicatorResponse(
+    string IndicatorId,
+    string Name,
+    string Unit,
+    string CatalogStatus,
+    SourceLink Source,
+    bool Overridden,
+    IReadOnlyList<ProfileBandResponse> Bands);
+
+// Min <= value < Max
+public sealed record ProfileBandResponse(HealthStatus Status, decimal? Min, decimal? Max);

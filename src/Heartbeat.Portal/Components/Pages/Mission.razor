@@ -3,6 +3,7 @@
 @using System.Text.Json
 @inject MissionControlClient Client
 @inject MissionControlSession Session
+@inject IStringLocalizer<SharedResource> T
 
 <PageTitle>Heartbeat | Misión</PageTitle>
 
@@ -49,13 +50,40 @@
                         </div>
                         <span class="mission-environment">@EnvironmentLabel(_mission.EnvironmentProfile.Type)</span>
                     </header>
+                    <div class="mission-profile-picker">
+                        <label for="mission-profile-select">@T["Environment profile"]</label>
+                        <select id="mission-profile-select" value="@_selectedProfileId" @onchange="OnProfileChanged"
+                                disabled="@(_profiles.Length == 0)">
+                            <option value="">@T["Current mission"]</option>
+                            @foreach (var option in _profiles)
+                            {
+                                <option value="@option.Id">@option.Name</option>
+                            }
+                        </select>
+                        @if (_risksError)
+                        {
+                            <span class="mission-picker-note" role="alert">@T["Could not update the traffic lights for this profile."]</span>
+                        }
+                        @if (_profilesError)
+                        {
+                            <span class="mission-picker-note" role="status">@T["Environment profiles are not available right now."]</span>
+                        }
+                        else if (SelectedProfile is null)
+                        {
+                            <span class="mission-picker-note">@T["Choose a profile to compare mining, Antarctica, submarine or offshore conditions."]</span>
+                        }
+                    </div>
                     <dl class="mission-metrics">
                         <div><dt>Distancia a la Tierra</dt><dd>@DistanceLabel</dd></div>
                         <div><dt>Retardo unidireccional</dt><dd>@DelayLabel</dd></div>
                         <div><dt>Gravedad</dt><dd>@($"{_mission.EnvironmentProfile.GravityG:0.##} g")</dd></div>
                         <div><dt>Tripulación</dt><dd>@_mission.EnvironmentProfile.CrewSize</dd></div>
                     </dl>
-                    @if (_mission.Indices is { } indices)
+                    @if (SelectedProfile is { } selected)
+                    {
+                        <ProfileThresholds Profile="selected" />
+                    }
+                    @if (SelectedProfile is null && _mission.Indices is { } indices)
                     {
                         <div class="mission-indices">
                             <span>Aislamiento: <strong>@indices.Isolation.Label</strong></span>
@@ -78,6 +106,10 @@
                         <header>
                             <h2 id="mission-roster-title">Semáforo de la tripulación</h2>
                             <p>Estados y explicaciones por peligro · No es un diagnóstico.</p>
+                            @if (SelectedProfile is { } active)
+                            {
+                                <p>@T["Traffic lights judged with the limits of {0}. Vital signs and radiation keep their standard limits.", active.Name]</p>
+                            }
                         </header>
                         <div class="mission-crew">
                             @foreach (var astronaut in _crew)
@@ -142,6 +174,15 @@
     private bool _forbidden;
     private string? _error;
 
+    private DomainProfileResponse[] _profiles = [];
+    private string _selectedProfileId = "";
+    private bool _profilesError;
+    private bool _risksError;
+
+    private DomainProfileResponse? SelectedProfile =>
+        _profiles.FirstOrDefault(profile => profile.Id == _selectedProfileId);
+
+    // The mission's own environment stays; the profile only changes the thresholds (CONTRACTS.md §10).
     private string DistanceLabel => _mission is null
         ? "—"
         : _mission.EnvironmentProfile.DistanceKm >= 1_000_000
@@ -153,6 +194,29 @@
         : _mission.CommunicationDelaySeconds < 60
             ? $"{_mission.CommunicationDelaySeconds:0.##} s"
             : $"{_mission.CommunicationDelaySeconds / 60:0.##} min";
+
+    private async Task OnProfileChanged(ChangeEventArgs args)
+    {
+        _selectedProfileId = args.Value?.ToString() ?? "";
+        _risksError = false;
+        try
+        {
+            await LoadRisksAsync();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or InvalidDataException or TaskCanceledException)
+        {
+            _risksError = true;
+        }
+    }
+
+    private async Task LoadRisksAsync()
+    {
+        var profileId = string.IsNullOrEmpty(_selectedProfileId) ? null : _selectedProfileId;
+        var risks = await Task.WhenAll(_crew.Select(async astronaut =>
+            (astronaut.AstronautId, Risk: await Client.GetCrewRiskAsync(astronaut.AstronautId, profileId))));
+        _risks = risks.ToDictionary(item => item.AstronautId, item => item.Risk);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -174,9 +238,8 @@
             await Task.WhenAll(missionTask, crewTask);
             _mission = await missionTask;
             _crew = await crewTask;
-            var risks = await Task.WhenAll(_crew.Select(async astronaut =>
-                (astronaut.AstronautId, Risk: await Client.GetCrewRiskAsync(astronaut.AstronautId))));
-            _risks = risks.ToDictionary(item => item.AstronautId, item => item.Risk);
+            await LoadProfilesAsync();
+            await LoadRisksAsync();
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
@@ -193,6 +256,25 @@
         }
     }
 
+    // Profiles are static catalog data; if they fail, the rest of the mission view still works.
+    private async Task LoadProfilesAsync()
+    {
+        _profilesError = false;
+        try
+        {
+            _profiles = await Client.GetDomainProfilesAsync();
+            if (_profiles.All(profile => profile.Id != _selectedProfileId))
+                _selectedProfileId = "";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or InvalidDataException or TaskCanceledException)
+        {
+            _profiles = [];
+            _selectedProfileId = "";
+            _profilesError = true;
+        }
+    }
+
     private static string EnvironmentLabel(string environment) => environment switch
     {
         "station" => "Estación",
@@ -200,6 +282,11 @@
         "rover" => "Vehículo explorador",
         "lunarBase" => "Base lunar",
         "marsBase" => "Base en Marte",
+        "space" => "Espacio (referencia)",
+        "mining" => "Minería",
+        "antarctica" => "Antártida",
+        "submarine" => "Submarino",
+        "offshore" => "Plataforma offshore",
         _ => environment
     };
 
