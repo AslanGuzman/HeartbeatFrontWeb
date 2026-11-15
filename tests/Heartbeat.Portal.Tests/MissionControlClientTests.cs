@@ -240,6 +240,136 @@ public sealed class MissionControlClientTests
         Assert.HasCount(4, requests);
     }
 
+    [TestMethod]
+    public async Task AlertEndpointsFilterPagesAndPostAcknowledgementNote()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var alertId = Guid.NewGuid();
+        var astronautId = Guid.NewGuid();
+        var checkUpId = Guid.NewGuid();
+        var requests = new List<(string Uri, string? Token, string? Body)>();
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            var body = request.Content is null
+                ? null
+                : await request.Content.ReadAsStringAsync(cancellationToken);
+            requests.Add((
+                request.RequestUri!.PathAndQuery,
+                request.Headers.Authorization?.Parameter,
+                body));
+
+            object response = request.Method == HttpMethod.Post
+                ? new
+                {
+                    id = alertId,
+                    astronautId,
+                    astronautName = "Ana Rivera",
+                    checkUpId,
+                    indicators = new[] { "bloodPressure" },
+                    createdAt = now,
+                    acknowledgedAt = now,
+                    acknowledgedBy = "Flight Surgeon",
+                    acknowledgeNote = "Reviewed with the crew."
+                }
+                : new
+                {
+                    items = new[]
+                    {
+                        new
+                        {
+                            id = alertId,
+                            astronautId,
+                            astronautName = "Ana Rivera",
+                            checkUpId,
+                            indicators = new[] { "bloodPressure" },
+                            createdAt = now,
+                            acknowledgedAt = (DateTimeOffset?)null,
+                            acknowledgedBy = (string?)null,
+                            acknowledgeNote = (string?)null
+                        }
+                    },
+                    page = 2,
+                    pageSize = 10,
+                    total = 11
+                };
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(response)
+            };
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var permissions = new[] { Permissions.AlertsView, Permissions.AlertsAcknowledge };
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        session.SetUser(new PortalUserDto(
+            Guid.NewGuid(),
+            "surgeon",
+            "surgeon@heartbeat.test",
+            "Flight Surgeon",
+            new RoleDto(Guid.NewGuid(), "Flight Surgeon", true, 1, permissions),
+            true,
+            permissions));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var alerts = await client.GetAlertsAsync("all", page: 2, pageSize: 10);
+        var acknowledged = await client.AcknowledgeAlertAsync(alertId, "Reviewed with the crew.");
+
+        Assert.AreEqual(11, alerts.Total);
+        Assert.AreEqual(IndicatorType.BloodPressure, alerts.Items[0].Indicators[0]);
+        Assert.AreEqual("Flight Surgeon", acknowledged.AcknowledgedBy);
+        Assert.AreEqual("/api/mc/v1/alerts?state=all&page=2&pageSize=10", requests[0].Uri);
+        Assert.AreEqual($"/api/mc/v1/alerts/{alertId:D}/acknowledge", requests[1].Uri);
+        using var acknowledgeBody = JsonDocument.Parse(requests[1].Body!);
+        Assert.AreEqual(
+            "Reviewed with the crew.",
+            acknowledgeBody.RootElement.GetProperty("note").GetString());
+        Assert.IsTrue(requests.All(request => request.Token == "access-token"));
+    }
+
+    [TestMethod]
+    public async Task AlertCounterRefreshesTheOpenAlertTotal()
+    {
+        var now = DateTimeOffset.UtcNow;
+        string? requestedUri = null;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            requestedUri = request.RequestUri!.PathAndQuery;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new
+                {
+                    items = Array.Empty<object>(),
+                    page = 1,
+                    pageSize = 1,
+                    total = 4
+                })
+            });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var counter = new AlertCounterState(new MissionControlClient(httpClient, refresher));
+        var changeCount = 0;
+        counter.Changed += () => changeCount++;
+
+        await counter.RefreshAsync();
+
+        Assert.AreEqual(4, counter.OpenCount);
+        Assert.AreEqual(1, changeCount);
+        Assert.AreEqual("/api/mc/v1/alerts?state=open&page=1&pageSize=1", requestedUri);
+    }
+
     private sealed class StubSessionStore : IMissionControlSessionStore
     {
         public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

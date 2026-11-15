@@ -1,0 +1,381 @@
+@page "/alerts"
+@using System.Net
+@using System.Text.Json
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+@inject AlertCounterState AlertCounter
+
+<PageTitle>Heartbeat | Alertas</PageTitle>
+
+<RequirePermission Permission="@Permissions.AlertsView">
+    <ChildContent>
+        <section class="alerts-page" aria-labelledby="alerts-title">
+            <header class="alerts-heading">
+                <div>
+                    <h1 id="alerts-title">Centro de alertas</h1>
+                    <p>Resultados críticos reportados por la tripulación.</p>
+                </div>
+                @if (_alerts is not null && !_loading)
+                {
+                    <span class="alerts-total">@_alerts.Total alertas</span>
+                }
+            </header>
+
+            <nav class="alerts-tabs" aria-label="Filtrar alertas">
+                <button type="button"
+                        class="@TabClass("all")"
+                        aria-pressed="@(_state == "all")"
+                        @onclick="ShowAllAsync">
+                    Todas
+                </button>
+                <button type="button"
+                        class="@TabClass("open")"
+                        aria-pressed="@(_state == "open")"
+                        @onclick="ShowOpenAsync">
+                    Abiertas
+                </button>
+                <button type="button"
+                        class="@TabClass("acknowledged")"
+                        aria-pressed="@(_state == "acknowledged")"
+                        @onclick="ShowAcknowledgedAsync">
+                    Reconocidas
+                </button>
+            </nav>
+
+            @if (_loading)
+            {
+                <div class="alerts-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando alertas…</span>
+                </div>
+            }
+            else if (_forbidden)
+            {
+                <div class="alerts-state" role="alert">
+                    <h2>Sin permiso para ver las alertas</h2>
+                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                </div>
+            }
+            else if (_loadError is not null)
+            {
+                <div class="alerts-state" role="alert">
+                    <h2>No se pudieron cargar las alertas</h2>
+                    <p>@_loadError</p>
+                    <button class="alerts-button" type="button" @onclick="LoadAlertsAsync">Reintentar</button>
+                </div>
+            }
+            else if (_alerts is null || _alerts.Items.Count == 0)
+            {
+                <div class="alerts-state alerts-empty">
+                    <h2>@EmptyTitle</h2>
+                    <p>@EmptyMessage</p>
+                </div>
+            }
+            else
+            {
+                <div class="alerts-list">
+                    @foreach (var alert in _alerts.Items)
+                    {
+                        var acknowledged = alert.AcknowledgedAt is not null;
+                        <article @key="alert.Id"
+                                 class="alert-card @(acknowledged ? "alert-card--acknowledged" : "alert-card--open")">
+                            <header class="alert-card-heading">
+                                <div>
+                                    <h2>@IndicatorSummary(alert.Indicators)</h2>
+                                    <p class="alert-astronaut">@alert.AstronautName</p>
+                                </div>
+                                <span class="alert-severity">Crítica</span>
+                            </header>
+
+                            <dl class="alert-details">
+                                <div>
+                                    <dt>Fecha de alerta</dt>
+                                    <dd>@FormatTimestamp(alert.CreatedAt)</dd>
+                                </div>
+                                <div>
+                                    <dt>Indicadores</dt>
+                                    <dd class="alert-indicators">
+                                        @foreach (var indicator in alert.Indicators)
+                                        {
+                                            <span @key="indicator">@IndicatorName(indicator)</span>
+                                        }
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            @if (acknowledged)
+                            {
+                                <div class="alert-acknowledgement">
+                                    <strong>Reconocida por @(alert.AcknowledgedBy ?? "Usuario no disponible")</strong>
+                                    <span>@FormatTimestamp(alert.AcknowledgedAt!.Value)</span>
+                                    @if (!string.IsNullOrWhiteSpace(alert.AcknowledgeNote))
+                                    {
+                                        <p>@alert.AcknowledgeNote</p>
+                                    }
+                                </div>
+                            }
+                            else if (Session.HasPermission(Permissions.AlertsAcknowledge))
+                            {
+                                @if (_acknowledgingAlertId == alert.Id)
+                                {
+                                    <form class="acknowledge-form"
+                                          @onsubmit="() => AcknowledgeAsync(alert.Id)"
+                                          @onsubmit:preventDefault>
+                                        <label for="@($"ack-note-{alert.Id:N}")">Nota de reconocimiento</label>
+                                        <textarea id="@($"ack-note-{alert.Id:N}")"
+                                                  @bind="_acknowledgeNote"
+                                                  maxlength="500"
+                                                  required
+                                                  rows="3"></textarea>
+                                        <span class="acknowledge-hint">Obligatoria, hasta 500 caracteres.</span>
+                                        @if (_acknowledgeError is not null)
+                                        {
+                                            <p class="acknowledge-error" role="alert">@_acknowledgeError</p>
+                                        }
+                                        <div class="acknowledge-actions">
+                                            <button class="alerts-button"
+                                                    type="submit"
+                                                    disabled="@(_savingAcknowledgement || string.IsNullOrWhiteSpace(_acknowledgeNote))">
+                                                @(_savingAcknowledgement ? "Guardando…" : "Confirmar reconocimiento")
+                                            </button>
+                                            <button class="alerts-button alerts-button--secondary"
+                                                    type="button"
+                                                    disabled="@_savingAcknowledgement"
+                                                    @onclick="CancelAcknowledge">
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="alerts-action"
+                                            type="button"
+                                            @onclick="() => BeginAcknowledge(alert.Id)">
+                                        Reconocer alerta
+                                    </button>
+                                }
+                            }
+                        </article>
+                    }
+                </div>
+
+                <nav class="alerts-pagination" aria-label="Páginas de alertas">
+                    <span>Página @_page de @PageCount</span>
+                    <div>
+                        <button class="alerts-button alerts-button--secondary"
+                                type="button"
+                                disabled="@(_page <= 1 || _loading)"
+                                @onclick="PreviousPageAsync">
+                            Anterior
+                        </button>
+                        <button class="alerts-button alerts-button--secondary"
+                                type="button"
+                                disabled="@(_page >= PageCount || _loading)"
+                                @onclick="NextPageAsync">
+                            Siguiente
+                        </button>
+                    </div>
+                </nav>
+            }
+        </section>
+    </ChildContent>
+    <NotAuthorized>
+        <section class="alerts-state" role="alert">
+            <h1>Sin permiso para ver las alertas</h1>
+            <p>Tu cuenta no tiene el permiso necesario.</p>
+        </section>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    private const int PageSize = 20;
+    private string _state = "all";
+    private int _page = 1;
+    private Paged<AlertDto>? _alerts;
+    private bool _loading = true;
+    private bool _forbidden;
+    private string? _loadError;
+    private Guid? _acknowledgingAlertId;
+    private string _acknowledgeNote = string.Empty;
+    private string? _acknowledgeError;
+    private bool _savingAcknowledgement;
+
+    private int PageCount =>
+        _alerts is null ? 1 : Math.Max(1, (int)Math.Ceiling((double)_alerts.Total / PageSize));
+
+    private string EmptyTitle => _state switch
+    {
+        "open" => "No hay alertas abiertas",
+        "acknowledged" => "No hay alertas reconocidas",
+        _ => "No hay alertas registradas"
+    };
+
+    private string EmptyMessage => _state == "open"
+        ? "Las alertas abiertas de la tripulación aparecerán aquí."
+        : "Prueba otro filtro para consultar las alertas.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.HasPermission(Permissions.AlertsView))
+        {
+            await LoadAlertsAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadAlertsAsync()
+    {
+        if (!Session.HasPermission(Permissions.AlertsView))
+        {
+            _loading = false;
+            return;
+        }
+
+        _loading = true;
+        _forbidden = false;
+        _loadError = null;
+
+        try
+        {
+            _alerts = await Client.GetAlertsAsync(_state, _page, PageSize);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _loadError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task ShowAllAsync() => ChangeStateAsync("all");
+
+    private Task ShowOpenAsync() => ChangeStateAsync("open");
+
+    private Task ShowAcknowledgedAsync() => ChangeStateAsync("acknowledged");
+
+    private async Task ChangeStateAsync(string state)
+    {
+        _state = state;
+        _page = 1;
+        CancelAcknowledge();
+        await LoadAlertsAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (_page > 1)
+        {
+            _page--;
+            await LoadAlertsAsync();
+        }
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (_page < PageCount)
+        {
+            _page++;
+            await LoadAlertsAsync();
+        }
+    }
+
+    private void BeginAcknowledge(Guid alertId)
+    {
+        _acknowledgingAlertId = alertId;
+        _acknowledgeNote = string.Empty;
+        _acknowledgeError = null;
+    }
+
+    private void CancelAcknowledge()
+    {
+        _acknowledgingAlertId = null;
+        _acknowledgeNote = string.Empty;
+        _acknowledgeError = null;
+    }
+
+    private async Task AcknowledgeAsync(Guid alertId)
+    {
+        if (!Session.HasPermission(Permissions.AlertsAcknowledge))
+        {
+            return;
+        }
+
+        var note = _acknowledgeNote.Trim();
+        if (note.Length is 0 or > 500)
+        {
+            _acknowledgeError = "Escribe una nota de hasta 500 caracteres.";
+            return;
+        }
+
+        _savingAcknowledgement = true;
+        _acknowledgeError = null;
+
+        try
+        {
+            await Client.AcknowledgeAlertAsync(alertId, note);
+            CancelAcknowledge();
+            await LoadAlertsAsync();
+            await AlertCounter.RefreshAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _acknowledgeError = "Tu cuenta no tiene permiso para reconocer alertas.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _acknowledgeError = "La alerta ya no está disponible. Actualiza la lista.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
+        {
+            _acknowledgeError = "La alerta ya fue reconocida. Actualiza la lista.";
+            await LoadAlertsAsync();
+            await AlertCounter.RefreshAsync();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _acknowledgeError = "No se pudo guardar el reconocimiento. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _savingAcknowledgement = false;
+        }
+    }
+
+    private string TabClass(string state) =>
+        state == _state ? "alerts-tab alerts-tab--active" : "alerts-tab";
+
+    private static string IndicatorSummary(IReadOnlyList<IndicatorType> indicators) =>
+        string.Join(", ", indicators.Select(IndicatorName));
+
+    private static string IndicatorName(IndicatorType indicator) => indicator switch
+    {
+        IndicatorType.BloodPressure => "Presión arterial",
+        IndicatorType.HeartRate => "Frecuencia cardíaca",
+        IndicatorType.BloodSugar => "Glucosa en sangre",
+        IndicatorType.BodyTemperature => "Temperatura corporal",
+        IndicatorType.Sleep => "Sueño",
+        IndicatorType.Mood => "Estado de ánimo",
+        _ => indicator.ToString()
+    };
+
+    private static string FormatTimestamp(DateTimeOffset timestamp) =>
+        timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+}
