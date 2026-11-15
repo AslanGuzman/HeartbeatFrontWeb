@@ -21,7 +21,10 @@
 
         <div class="workspace">
             <header class="topbar">
-                <span>Control de misión</span>
+                <div class="topbar-title">
+                    <span>Control de misión</span>
+                    <span class="simulated-data-badge">Datos simulados</span>
+                </div>
                 <span class="topbar-context">@user.DisplayName</span>
                 <button class="logout-button" type="button" @onclick="LogoutAsync">Cerrar sesión</button>
             </header>
