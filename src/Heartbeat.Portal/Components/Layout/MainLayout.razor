@@ -24,7 +24,10 @@
             <header class="topbar">
                 <div class="topbar-title">
                     <span>@T["Mission Control"]</span>
-                    <span class="simulated-data-badge">@T["Simulated data"]</span>
+                    @if (!ShowsRealWatchData())
+                    {
+                        <span class="simulated-data-badge">@T["Simulated data"]</span>
+                    }
                 </div>
                 <LanguageSelector />
                 <span class="topbar-context">@user.DisplayName</span>
@@ -94,6 +97,14 @@ else
                 : Session.SessionExpired ? "?expired=true" : string.Empty;
             Navigation.NavigateTo($"/login{expired}", replace: true);
         }
+    }
+
+    // /fc-en-vivo y /salud muestran datos reales del Galaxy Watch 5 y de Samsung Health, no simulados.
+    private bool ShowsRealWatchData()
+    {
+        var path = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+        return path.Equals("/fc-en-vivo", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/salud", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task LogoutAsync()
