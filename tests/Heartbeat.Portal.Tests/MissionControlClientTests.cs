@@ -222,7 +222,8 @@ public sealed class MissionControlClientTests
             new DateTimeOffset(2026, 11, 14, 23, 59, 59, TimeSpan.Zero),
             HealthStatus.Watch,
             page: 2,
-            pageSize: 20);
+            pageSize: 20,
+            source: ReadingSource.Wearable);
         var detail = await client.GetCheckUpDetailAsync(astronautId, checkUpId);
         using var ranges = await client.GetReferenceRangesAsync();
 
@@ -236,6 +237,7 @@ public sealed class MissionControlClientTests
         Assert.IsTrue(requests[1].Uri.Contains("page=2", StringComparison.Ordinal));
         Assert.IsTrue(requests[1].Uri.Contains("status=watch", StringComparison.Ordinal));
         Assert.IsTrue(requests[1].Uri.Contains("from=", StringComparison.Ordinal));
+        Assert.IsTrue(requests[1].Uri.Contains("source=wearable", StringComparison.Ordinal));
         Assert.IsTrue(requests.All(request => request.Token == "access-token"));
         Assert.HasCount(4, requests);
     }
@@ -668,14 +670,16 @@ public sealed class MissionControlClientTests
                                 t = now.AddDays(-1),
                                 value = 118m,
                                 secondaryValue = (decimal?)76,
-                                status = "normal"
+                                status = "normal",
+                                source = "manual"
                             },
                             new
                             {
                                 t = now,
                                 value = 134m,
                                 secondaryValue = (decimal?)88,
-                                status = "watch"
+                                status = "watch",
+                                source = "wearable"
                             }
                         }
                     },
@@ -695,7 +699,8 @@ public sealed class MissionControlClientTests
             astronautId,
             IndicatorType.BloodPressure,
             now.AddDays(-7),
-            now);
+            now,
+            ReadingSource.Wearable);
 
         Assert.AreEqual(IndicatorType.BloodPressure, series.Indicator);
         Assert.AreEqual("mmHg", series.Unit);
@@ -704,9 +709,11 @@ public sealed class MissionControlClientTests
         Assert.HasCount(2, series.Points);
         Assert.AreEqual(88m, series.Points[1].SecondaryValue);
         Assert.AreEqual(HealthStatus.Watch, series.Points[1].Status);
+        Assert.AreEqual(ReadingSource.Wearable, series.Points[1].Source);
         Assert.IsTrue(requestedUri!.Contains("indicator=bloodPressure", StringComparison.Ordinal));
         Assert.IsTrue(requestedUri.Contains("from=", StringComparison.Ordinal));
         Assert.IsTrue(requestedUri.Contains("to=", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("source=wearable", StringComparison.Ordinal));
     }
 
     [TestMethod]
