@@ -296,6 +296,14 @@
                                     <option value="critical">Critical</option>
                                 </select>
                             </label>
+                            <label>
+                                Origen
+                                <select @bind="_historySource">
+                                    <option value="">Todos</option>
+                                    <option value="manual">Manual</option>
+                                    <option value="wearable">Reloj</option>
+                                </select>
+                            </label>
                             <div class="history-filter-actions">
                                 <button class="crew-member-retry" type="button" @onclick="ApplyHistoryFiltersAsync">
                                     Aplicar filtros
@@ -336,6 +344,7 @@
                                         <tr>
                                             <th scope="col">Date</th>
                                             <th scope="col">Status</th>
+                                            <th scope="col">Origen</th>
                                             <th scope="col">Indicadores</th>
                                             <th scope="col"><span class="visually-hidden">Action</span></th>
                                         </tr>
@@ -350,6 +359,7 @@
                                                         @StatusLabel(checkUp.OverallStatus)
                                                     </span>
                                                 </td>
+                                                <td data-label="Origen">@SourceLabels(checkUp.Readings)</td>
                                                 <td data-label="Indicadores">@checkUp.Readings.Count</td>
                                                 <td class="history-action">
                                                     @if (Session.HasPermission(Permissions.VitalsView))
@@ -443,6 +453,7 @@
                                                     {
                                                         <span>· @evaluation.Label</span>
                                                     }
+                                                    <span>· Origen: @SourceLabel(reading.Source)</span>
                                                 </p>
                                             }
                                             @if (evaluation.Guidance.Count > 0)
@@ -476,6 +487,7 @@
                                 </div>
                             </article>
                         }
+                        <p>Datos del reloj, no validados clínicamente</p>
                     </section>
                 }
 
@@ -517,6 +529,7 @@
     private DateTime? _historyFrom;
     private DateTime? _historyTo;
     private string _historyStatus = string.Empty;
+    private string _historySource = string.Empty;
     private int _historyPage = 1;
 
     private int HistoryPageCount =>
@@ -577,6 +590,7 @@
         _historyFrom = null;
         _historyTo = null;
         _historyStatus = string.Empty;
+        _historySource = string.Empty;
         _historyPage = 1;
     }
 
@@ -665,6 +679,9 @@
             HealthStatus? status = Enum.TryParse<HealthStatus>(_historyStatus, true, out var parsedStatus)
                 ? parsedStatus
                 : null;
+            ReadingSource? source = Enum.TryParse<ReadingSource>(_historySource, true, out var parsedSource)
+                ? parsedSource
+                : null;
 
             _history = await Client.GetCheckUpsAsync(
                 AstronautId,
@@ -672,7 +689,8 @@
                 EndOfDay(_historyTo),
                 status,
                 _historyPage,
-                HistoryPageSize);
+                HistoryPageSize,
+                source);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
@@ -705,6 +723,7 @@
         _historyFrom = null;
         _historyTo = null;
         _historyStatus = string.Empty;
+        _historySource = string.Empty;
         _historyPage = 1;
         await LoadHistoryAsync();
     }
@@ -800,6 +819,15 @@
             : new DateTimeOffset(DateTime.SpecifyKind(
                 date.Value.Date.AddDays(1).AddTicks(-1),
                 DateTimeKind.Local));
+
+    private static string SourceLabel(ReadingSource source) =>
+        source == ReadingSource.Wearable ? "Reloj" : "Manual";
+
+    private static string SourceLabels(IEnumerable<ReadingDto> readings)
+    {
+        var labels = readings.Select(reading => SourceLabel(reading.Source)).Distinct().ToArray();
+        return labels.Length == 0 ? "—" : string.Join(" / ", labels);
+    }
 
     private IndicatorStatusDto? CurrentIndicator(IndicatorType indicator) =>
         _status?.Indicators.FirstOrDefault(item => item.Indicator == indicator);

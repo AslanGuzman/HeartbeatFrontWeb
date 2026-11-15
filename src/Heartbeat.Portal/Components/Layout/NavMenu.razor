@@ -58,29 +58,33 @@
             </li>
         </RequirePermission>
         <RequirePermission Permission="@Permissions.CrewView">
-            <li>
-                <NavLink class="rail-item" href="/fc-en-vivo" Match="NavLinkMatch.Prefix" title="@T["Live heart rate"]">
-                    <span class="rail-chip" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                        </svg>
-                    </span>
-                    <span class="rail-label">@T["Live HR"]</span>
-                </NavLink>
-            </li>
+            <RequirePermission Permission="@Permissions.VitalsView">
+                <li>
+                    <NavLink class="rail-item" href="/fc-en-vivo" Match="NavLinkMatch.Prefix" title="@T["Live heart rate"]">
+                        <span class="rail-chip" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                            </svg>
+                        </span>
+                        <span class="rail-label">@T["Live HR"]</span>
+                    </NavLink>
+                </li>
+            </RequirePermission>
         </RequirePermission>
         <RequirePermission Permission="@Permissions.CrewView">
-            <li>
-                <NavLink class="rail-item" href="/salud" Match="NavLinkMatch.Prefix" title="@T["Health summary"]">
-                    <span class="rail-chip" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <rect x="6" y="6" width="12" height="12" rx="3" />
-                            <path d="m9 6 1-4h4l1 4M9 18l1 4h4l1-4M12 9.5V12l1.5 1.5" />
-                        </svg>
-                    </span>
-                    <span class="rail-label">@T["Health"]</span>
-                </NavLink>
-            </li>
+            <RequirePermission Permission="@Permissions.VitalsView">
+                <li>
+                    <NavLink class="rail-item" href="/salud" Match="NavLinkMatch.Prefix" title="@T["Health summary"]">
+                        <span class="rail-chip" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <rect x="6" y="6" width="12" height="12" rx="3" />
+                                <path d="m9 6 1-4h4l1 4M9 18l1 4h4l1-4M12 9.5V12l1.5 1.5" />
+                            </svg>
+                        </span>
+                        <span class="rail-label">@T["Health"]</span>
+                    </NavLink>
+                </li>
+            </RequirePermission>
         </RequirePermission>
         <RequirePermission Permission="@Permissions.AlertsView">
             <li>

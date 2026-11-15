@@ -51,35 +51,56 @@ export function render(canvasId, payload) {
 
     Chart.getChart(canvas)?.destroy();
 
-    const datasets = [{
-        label: payload.unit ? `Valor (${payload.unit})` : 'Valor',
-        data: payload.points.map(point => ({
-            x: Date.parse(point.t),
-            y: point.value
-        })),
-        borderColor: '#110559',
-        backgroundColor: '#110559',
-        pointBackgroundColor: payload.points.map(point => statusColors[point.status] ?? statusColors.normal),
-        pointBorderColor: payload.points.map(point => statusColors[point.status] ?? statusColors.normal),
-        pointRadius: 3,
-        borderWidth: 2,
-        tension: 0.25
-    }];
+    const sourceStyles = {
+        manual: { label: 'Manual', color: '#110559', dash: [] },
+        wearable: { label: 'Reloj', color: '#6D28D9', dash: [6, 3] }
+    };
+    const sources = [...new Set(payload.points.map(point => point.source ?? 'manual'))];
+    const datasets = sources.map(source => {
+        const style = sourceStyles[source] ?? sourceStyles.manual;
+        const points = payload.points.filter(point => (point.source ?? 'manual') === source);
+        return {
+            label: payload.unit ? `${style.label} (${payload.unit})` : style.label,
+            source,
+            data: points.map(point => ({
+                x: Date.parse(point.t),
+                y: point.value,
+                status: point.status
+            })),
+            borderColor: style.color,
+            backgroundColor: style.color,
+            pointBackgroundColor: points.map(point => statusColors[point.status] ?? statusColors.normal),
+            pointBorderColor: points.map(point => statusColors[point.status] ?? statusColors.normal),
+            pointRadius: 3,
+            borderWidth: 2,
+            borderDash: style.dash,
+            tension: 0.25
+        };
+    });
 
     if (payload.points.some(point => point.secondaryValue != null)) {
-        datasets.push({
-            label: 'Secundario',
-            data: payload.points.map(point => ({
-                x: Date.parse(point.t),
-                y: point.secondaryValue
-            })),
-            borderColor: '#6B7280',
-            backgroundColor: '#6B7280',
-            pointRadius: 2,
-            borderWidth: 1.5,
-            borderDash: [4, 3],
-            tension: 0.25
-        });
+        for (const source of sources) {
+            const style = sourceStyles[source] ?? sourceStyles.manual;
+            const points = payload.points.filter(
+                point => (point.source ?? 'manual') === source && point.secondaryValue != null);
+            if (points.length) {
+                datasets.push({
+                    label: `${style.label} · secundario`,
+                    source,
+                    data: points.map(point => ({
+                        x: Date.parse(point.t),
+                        y: point.secondaryValue,
+                        status: point.status
+                    })),
+                    borderColor: style.color,
+                    backgroundColor: style.color,
+                    pointRadius: 2,
+                    borderWidth: 1.5,
+                    borderDash: [2, 3],
+                    tension: 0.25
+                });
+            }
+        }
     }
 
     new Chart(canvas, {
@@ -92,7 +113,7 @@ export function render(canvasId, payload) {
             parsing: false,
             plugins: {
                 legend: {
-                    display: datasets.length > 1,
+                    display: true,
                     labels: { boxWidth: 10, font: { size: 10 } }
                 },
                 tooltip: {
