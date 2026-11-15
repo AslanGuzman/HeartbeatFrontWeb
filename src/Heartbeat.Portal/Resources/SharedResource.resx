@@ -52,4 +52,12 @@
   <data name="Critical" xml:space="preserve"><value>Critical</value></data>
   <data name="No readings" xml:space="preserve"><value>No readings</value></data>
   <data name="No data" xml:space="preserve"><value>No data</value></data>
+  <data name="Live HR" xml:space="preserve"><value>Live HR</value></data>
+  <data name="Health" xml:space="preserve"><value>Health</value></data>
+  <data name="Roles" xml:space="preserve"><value>Roles</value></data>
+  <data name="Exit" xml:space="preserve"><value>Exit</value></data>
+  <data name="Crew health monitoring" xml:space="preserve"><value>Crew health monitoring</value></data>
+  <data name="Mission Control portal" xml:space="preserve"><value>Mission Control portal</value></data>
+  <data name="Monitoring prototype — not a substitute for a real medical diagnosis" xml:space="preserve"><value>Monitoring prototype — not a substitute for a real medical diagnosis</value></data>
+  <data name="Heartbeat, Mission Control home" xml:space="preserve"><value>Heartbeat, Mission Control home</value></data>
 </root>

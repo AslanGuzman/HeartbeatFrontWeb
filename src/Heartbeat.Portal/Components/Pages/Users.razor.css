@@ -26,7 +26,7 @@
     min-height: 2.4rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--brand-blue);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
@@ -50,8 +50,15 @@
     gap: 0.95rem;
     padding: 1.15rem 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+}
+
+.user-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .user-card--inactive {
@@ -87,12 +94,12 @@
 }
 
 .user-status--active {
-    background: #EAF6ED;
-    color: #165D2D;
+    background: var(--status-normal-soft);
+    color: var(--status-normal-text);
 }
 
 .user-status--inactive {
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
 }
 
@@ -175,8 +182,9 @@
     gap: 0.5rem;
     padding: 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .users-overlay {
@@ -192,12 +200,13 @@
 .users-modal {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
     animation: modalIn 0.2s ease-out;
+    box-shadow: var(--shadow-card);
 }
 
 @keyframes modalIn {
@@ -236,7 +245,7 @@
     min-height: 2.4rem;
     padding: 0.45rem 0.6rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--surface);
     color: var(--text-primary);
     font: inherit;
@@ -253,7 +262,7 @@
     padding: 0.7rem 0.85rem;
     border: 1px solid #F0C6C6;
     border-radius: 0.5rem;
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
     font-size: 0.85rem;
 }
@@ -268,7 +277,7 @@
     width: fit-content;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--surface);
     color: var(--brand-blue);
     font: inherit;
@@ -286,7 +295,7 @@
     min-height: 2.4rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--brand-blue);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;

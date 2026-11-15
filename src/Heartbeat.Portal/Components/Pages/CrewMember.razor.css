@@ -49,8 +49,9 @@
     gap: 1rem;
     padding: 1rem 1.2rem;
     border: 1px solid var(--border);
-    border-radius: 0.9rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .astronaut-avatar {
@@ -118,8 +119,9 @@
     margin: 0;
     padding: 1.15rem;
     border: 1px solid var(--border);
-    border-radius: 0.9rem;
+    border-radius: var(--radius-card);
     background: var(--surface-raised);
+    box-shadow: var(--shadow-card);
 }
 
 .body-map-panel figcaption {
@@ -176,8 +178,8 @@
 
 .map-dot--unknown,
 .legend-dot--unknown {
-    fill: #8A8795;
-    background: #8A8795;
+    fill: var(--status-none);
+    background: var(--status-none);
 }
 
 .map-legend {
@@ -216,8 +218,15 @@
     gap: 0.65rem;
     padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 0.8rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+}
+
+.indicator-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .indicator-card > header,
@@ -257,17 +266,17 @@
 }
 
 .health-chip--normal {
-    background: #EAF6ED;
-    color: #165D2D;
+    background: var(--status-normal-soft);
+    color: var(--status-normal-text);
 }
 
 .health-chip--watch {
-    background: #FFF3D4;
-    color: #704900;
+    background: var(--status-watch-soft);
+    color: var(--status-watch-text);
 }
 
 .health-chip--critical {
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
 }
 
@@ -359,7 +368,7 @@
     min-height: 2.55rem;
     padding: 0.45rem 0.6rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: #FFFFFF;
     color: var(--text-primary);
     font: inherit;
@@ -377,7 +386,7 @@
     min-height: 2.45rem;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--brand-blue);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
@@ -393,15 +402,16 @@
 
 .history-reset:disabled {
     border-color: var(--border);
-    color: #8A8795;
+    color: var(--status-none);
     cursor: not-allowed;
 }
 
 .history-table-wrap {
     overflow-x: auto;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .history-table {
@@ -461,8 +471,9 @@
     gap: 1rem;
     padding: 1.2rem;
     border: 1px solid var(--border);
-    border-radius: 0.9rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .checkup-note {
@@ -521,8 +532,9 @@
     gap: 0.5rem;
     padding: 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .crew-member-state h1,

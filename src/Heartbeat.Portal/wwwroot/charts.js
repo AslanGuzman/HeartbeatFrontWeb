@@ -1,12 +1,12 @@
 const bandColors = {
-    normal: 'rgba(22, 93, 45, 0.10)',
-    watch: 'rgba(180, 83, 9, 0.12)',
+    normal: 'rgba(46, 158, 91, 0.10)',
+    watch: 'rgba(217, 142, 4, 0.12)',
     critical: 'rgba(153, 14, 14, 0.10)'
 };
 
 const statusColors = {
-    normal: '#165D2D',
-    watch: '#B45309',
+    normal: '#1B6B3C',
+    watch: '#805200',
     critical: '#990E0E'
 };
 
@@ -120,7 +120,7 @@ export function render(canvasId, payload) {
                 },
                 y: {
                     ticks: { font: { size: 10 } },
-                    grid: { color: 'rgba(221, 217, 233, 0.6)' }
+                    grid: { color: 'rgba(236, 237, 245, 0.9)' }
                 }
             }
         },

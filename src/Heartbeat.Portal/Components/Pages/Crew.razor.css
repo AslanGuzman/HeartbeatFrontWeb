@@ -98,15 +98,17 @@
     padding: 1.1rem;
     border: 1px solid var(--border);
     border-left: 4px solid var(--border);
-    border-radius: 0.9rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
     color: var(--text-primary);
     text-decoration: none;
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
 }
 
 .crew-card:hover {
-    box-shadow: 0 0 0 2px rgb(17 5 89 / 14%);
-    background: #FCFBFF;
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .crew-card--normal {
@@ -184,8 +186,8 @@
 }
 
 .crew-status--normal {
-    background: #EAF6ED;
-    color: #165D2D;
+    background: var(--status-normal-soft);
+    color: var(--status-normal-text);
 }
 
 .crew-status--normal > span {
@@ -193,8 +195,8 @@
 }
 
 .crew-status--watch {
-    background: #FFF3D4;
-    color: #704900;
+    background: var(--status-watch-soft);
+    color: var(--status-watch-text);
 }
 
 .crew-status--watch > span {
@@ -202,7 +204,7 @@
 }
 
 .crew-status--critical {
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
 }
 
@@ -254,8 +256,9 @@
     gap: 0.45rem;
     padding: 1.4rem;
     border: 1px solid var(--border);
-    border-radius: 0.9rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .crew-state h2,
@@ -283,7 +286,7 @@
     margin-top: 0.45rem;
     padding: 0.55rem 0.8rem;
     border: 0;
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
