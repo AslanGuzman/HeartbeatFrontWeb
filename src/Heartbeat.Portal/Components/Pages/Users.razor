@@ -5,22 +5,22 @@
 @inject MissionControlClient Client
 @inject MissionControlSession Session
 
-<PageTitle>Heartbeat | Administración de usuarios</PageTitle>
+<PageTitle>Heartbeat | User administration</PageTitle>
 
 <RequirePermission Permission="@Permissions.UsersView">
     <ChildContent>
         <section class="users-page" aria-labelledby="users-title">
             <header class="users-heading">
                 <div>
-                    <h1 id="users-title">Usuarios del portal</h1>
-                    <p>Gestión de cuentas y roles.</p>
+                    <h1 id="users-title">Users del portal</h1>
+                    <p>Manage accounts and roles.</p>
                 </div>
                 <div>
                     @if (Session.HasPermission(Permissions.UsersManage))
                     {
                         <button class="users-button users-button--primary"
                                 type="button"
-                                @onclick="OpenCreateUserModal">Crear usuario</button>
+                                @onclick="OpenCreateUserModal">Create user</button>
                     }
                 </div>
             </header>
@@ -29,29 +29,29 @@
             {
                 <div class="users-state" role="status" aria-busy="true">
                     <span class="session-spinner" aria-hidden="true"></span>
-                    <span>Cargando usuarios…</span>
+                    <span>Loading users…</span>
                 </div>
             }
             else if (_forbidden)
             {
                 <div class="users-state" role="alert">
-                    <h2>Sin permiso para ver los usuarios</h2>
-                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                    <h2>You don’t have permission to view users</h2>
+                    <p>Your account does not have the required permission.</p>
                 </div>
             }
             else if (_loadError is not null)
             {
                 <div class="users-state" role="alert">
-                    <h2>No se pudieron cargar los usuarios</h2>
+                    <h2>Could not load users</h2>
                     <p>@_loadError</p>
-                    <button class="users-button" type="button" @onclick="LoadUsersAsync">Reintentar</button>
+                    <button class="users-button" type="button" @onclick="LoadUsersAsync">Retry</button>
                 </div>
             }
             else if (_users is null || _users.Items.Count == 0)
             {
                 <div class="users-state users-empty">
-                    <h2>No hay usuarios registrados</h2>
-                    <p>Los usuarios aparecerán aquí.</p>
+                    <h2>No users found</h2>
+                    <p>Users will appear here.</p>
                 </div>
             }
             else
@@ -67,13 +67,13 @@
                                     <p class="user-username">@user.UserName</p>
                                 </div>
                                 <span class="user-status @(user.IsActive ? "user-status--active" : "user-status--inactive")">
-                                    @(user.IsActive ? "Activo" : "Inactivo")
+                                    @(user.IsActive ? "Active" : "Inactive")
                                 </span>
                             </header>
 
                             <dl class="user-details">
                                 <div>
-                                    <dt>Correo</dt>
+                                    <dt>Email</dt>
                                     <dd>@user.Email</dd>
                                 </div>
                                 <div>
@@ -81,7 +81,7 @@
                                     <dd>@user.Role.Name</dd>
                                 </div>
                                 <div>
-                                    <dt>Permisos</dt>
+                                    <dt>Permissions</dt>
                                     <dd>
                                         @foreach (var perm in user.Permissions)
                                         {
@@ -96,31 +96,31 @@
                                 {
                                     <button class="users-action users-action--small"
                                             type="button"
-                                            @onclick="() => OpenUpdateModal(user)">Editar</button>
+                                            @onclick="() => OpenUpdateModal(user)">Edit</button>
                                     <button class="users-action users-action--small"
                                             type="button"
-                                            @onclick="() => OpenSetRoleModal(user)">Cambiar rol</button>
+                                            @onclick="() => OpenSetRoleModal(user)">Change role</button>
                                     <button class="users-action users-action--small users-action--danger"
                                             type="button"
                                             disabled="@(_toggleUserId == user.Id)"
-                                            @onclick="() => ToggleUserStatusAsync(user)">@(user.IsActive ? "Desactivar" : "Activar")</button>
+                                            @onclick="() => ToggleUserStatusAsync(user)">@(user.IsActive ? "Disable" : "Enable")</button>
                                 }
                             </div>
                         </article>
                     }
                 </div>
 
-                <nav class="users-pagination" aria-label="Páginas de usuarios">
-                    <span>Página @_page de @PageCount</span>
+                <nav class="users-pagination" aria-label="User pages">
+                    <span>Page @_page de @PageCount</span>
                     <div>
                         <button class="users-button users-button--secondary"
                                 type="button"
                                 disabled="@(_page <= 1 || _loading)"
-                                @onclick="PreviousPageAsync">Anterior</button>
+                                @onclick="PreviousPageAsync">Previous</button>
                         <button class="users-button users-button--secondary"
                                 type="button"
                                 disabled="@(_page >= PageCount || _loading)"
-                                @onclick="NextPageAsync">Siguiente</button>
+                                @onclick="NextPageAsync">Next</button>
                     </div>
                 </nav>
             }
@@ -141,31 +141,31 @@
                         @if (_showCreateUserModal)
                         {
                             <form class="users-form" @onsubmit="CreateUserAsync" @onsubmit:preventDefault>
-                                <h2 id="users-modal-title">Nuevo usuario</h2>
+                                <h2 id="users-modal-title">New user</h2>
 
                                 <label>
-                                    <span>Nombre de usuario</span>
+                                    <span>Username</span>
                                     <input @bind="_newUserName"
                                            maxlength="50"
                                            required
                                            disabled="@_saving" />
                                 </label>
                                 <label>
-                                    <span>Correo</span>
+                                    <span>Email</span>
                                     <input type="email"
                                            @bind="_newEmail"
                                            required
                                            disabled="@_saving" />
                                 </label>
                                 <label>
-                                    <span>Nombre visible</span>
+                                    <span>Display name</span>
                                     <input @bind="_newDisplayName"
                                            maxlength="100"
                                            required
                                            disabled="@_saving" />
                                 </label>
                                 <label>
-                                    <span>Contraseña</span>
+                                    <span>Password</span>
                                     <input type="password"
                                            @bind="_newPassword"
                                            required
@@ -176,7 +176,7 @@
                                     <select @bind="_newRoleId"
                                             required
                                             disabled="@(_saving || _roles.Count == 0)">
-                                        <option value="@Guid.Empty">Selecciona un rol</option>
+                                        <option value="@Guid.Empty">Select a role</option>
                                         @foreach (var role in _roles)
                                         {
                                             <option value="@role.Id">@role.Name</option>
@@ -197,30 +197,30 @@
                                     <button class="users-button users-button--primary"
                                             type="submit"
                                             disabled="@(_saving || _roles.Count == 0)">
-                                        @(_saving ? "Guardando…" : "Crear usuario")
+                                        @(_saving ? "Saving…" : "Create user")
                                     </button>
                                     <button class="users-button"
                                             type="button"
                                             disabled="@_saving"
-                                            @onclick="CloseModals">Cancelar</button>
+                                            @onclick="CloseModals">Cancel</button>
                                 </div>
                             </form>
                         }
                         else if (_showUpdateModal)
                         {
                             <form class="users-form" @onsubmit="UpdateUserAsync" @onsubmit:preventDefault>
-                                <h2 id="users-modal-title">Editar usuario</h2>
+                                <h2 id="users-modal-title">Edit user</h2>
                                 <p class="users-form-note">@_updateUserName</p>
 
                                 <label>
-                                    <span>Correo</span>
+                                    <span>Email</span>
                                     <input type="email"
                                            @bind="_updateEmail"
                                            required
                                            disabled="@_saving" />
                                 </label>
                                 <label>
-                                    <span>Nombre visible</span>
+                                    <span>Display name</span>
                                     <input @bind="_updateDisplayName"
                                            maxlength="100"
                                            required
@@ -236,19 +236,19 @@
                                     <button class="users-button users-button--primary"
                                             type="submit"
                                             disabled="@_saving">
-                                        @(_saving ? "Guardando…" : "Guardar cambios")
+                                        @(_saving ? "Saving…" : "Save cambios")
                                     </button>
                                     <button class="users-button"
                                             type="button"
                                             disabled="@_saving"
-                                            @onclick="CloseModals">Cancelar</button>
+                                            @onclick="CloseModals">Cancel</button>
                                 </div>
                             </form>
                         }
                         else
                         {
                             <form class="users-form" @onsubmit="SetUserRoleAsync" @onsubmit:preventDefault>
-                                <h2 id="users-modal-title">Cambiar rol</h2>
+                                <h2 id="users-modal-title">Change role</h2>
                                 <p class="users-form-note">@_roleUserName</p>
 
                                 <label>
@@ -256,7 +256,7 @@
                                     <select @bind="_selectedRoleId"
                                             required
                                             disabled="@(_saving || _roles.Count == 0)">
-                                        <option value="@Guid.Empty">Selecciona un rol</option>
+                                        <option value="@Guid.Empty">Select a role</option>
                                         @foreach (var role in _roles)
                                         {
                                             <option value="@role.Id">@role.Name</option>
@@ -277,12 +277,12 @@
                                     <button class="users-button users-button--primary"
                                             type="submit"
                                             disabled="@(_saving || _roles.Count == 0)">
-                                        @(_saving ? "Guardando…" : "Cambiar rol")
+                                        @(_saving ? "Saving…" : "Change role")
                                     </button>
                                     <button class="users-button"
                                             type="button"
                                             disabled="@_saving"
-                                            @onclick="CloseModals">Cancelar</button>
+                                            @onclick="CloseModals">Cancel</button>
                                 </div>
                             </form>
                         }
@@ -293,8 +293,8 @@
     </ChildContent>
     <NotAuthorized>
         <section class="users-state" role="alert">
-            <h1>Sin permiso para ver los usuarios</h1>
-            <p>Tu cuenta no tiene el permiso users.view.</p>
+            <h1>You don’t have permission to view users</h1>
+            <p>Your account does not have users.view permission.</p>
         </section>
     </NotAuthorized>
 </RequirePermission>
@@ -360,7 +360,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _rolesError = "No se pudieron cargar los roles. Vuelve a abrir el formulario para reintentar.";
+            _rolesError = "Could not load roles. Reopen the form to try again.";
         }
     }
 
@@ -384,7 +384,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _loadError = "Comprueba la conexión e inténtalo de nuevo.";
+            _loadError = "Check your connection and try again.";
         }
         finally
         {
@@ -463,13 +463,13 @@
             string.IsNullOrWhiteSpace(_newDisplayName) ||
             string.IsNullOrWhiteSpace(_newPassword))
         {
-            _modalError = "Completa todos los campos.";
+            _modalError = "Complete all fields.";
             return;
         }
 
         if (_newRoleId == Guid.Empty)
         {
-            _modalError = "Selecciona un rol.";
+            _modalError = "Select a role.";
             return;
         }
 
@@ -493,7 +493,7 @@
         }
         catch (Exception)
         {
-            _modalError = "No se pudo crear el usuario. Comprueba la conexión e inténtalo de nuevo.";
+            _modalError = "Could not create the user. Check your connection and try again.";
         }
         finally
         {
@@ -511,7 +511,7 @@
         if (string.IsNullOrWhiteSpace(_updateEmail) ||
             string.IsNullOrWhiteSpace(_updateDisplayName))
         {
-            _modalError = "Completa el correo y el nombre visible.";
+            _modalError = "Enter an email and display name.";
             return;
         }
 
@@ -532,7 +532,7 @@
         }
         catch (Exception)
         {
-            _modalError = "No se pudo guardar el usuario. Comprueba la conexión e inténtalo de nuevo.";
+            _modalError = "Could not save the user. Check your connection and try again.";
         }
         finally
         {
@@ -549,7 +549,7 @@
 
         if (_selectedRoleId == Guid.Empty)
         {
-            _modalError = "Selecciona un rol.";
+            _modalError = "Select a role.";
             return;
         }
 
@@ -568,7 +568,7 @@
         }
         catch (Exception)
         {
-            _modalError = "No se pudo cambiar el rol. Comprueba la conexión e inténtalo de nuevo.";
+            _modalError = "Could not change the role. Check your connection and try again.";
         }
         finally
         {
@@ -600,7 +600,7 @@
         }
         catch (Exception)
         {
-            _actionError = "No se pudo cambiar el estado del usuario. Comprueba la conexión e inténtalo de nuevo.";
+            _actionError = "Could not change the user status. Check your connection and try again.";
         }
         finally
         {
@@ -611,14 +611,14 @@
     private static string FriendlyError(HttpRequestException exception) =>
         exception.Message switch
         {
-            "UserName already in use" => "Ese nombre de usuario ya está en uso.",
-            "Email already in use" => "Ese correo ya está en uso.",
+            "UserName already in use" => "That username is already in use.",
+            "Email already in use" => "That email is already in use.",
             "The last active Administrator cannot be disabled" =>
-                "No se puede desactivar al último Administrator activo.",
+                "The last active Administrator cannot be disabled.",
             "The last active Administrator cannot be moved to another role" =>
-                "No se puede cambiar el rol del último Administrator activo.",
+                "The last active Administrator cannot be moved to another role.",
             "You cannot move yourself to a role without users.manage and roles.manage" =>
-                "No puedes cambiarte a un rol sin users.manage y roles.manage.",
+                "You cannot move yourself to a role without users.manage and roles.manage.",
             _ => exception.Message
         };
 }

@@ -1,27 +1,32 @@
 .login-page {
     min-height: 100svh;
-    padding: 5px 4.8vw;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 2.75rem);
     background: var(--brand-blue);
     color: #FFFFFF;
 }
 
 .login-canvas {
-    min-height: calc(100svh - 5px);
+    width: 100%;
+    min-height: calc(100svh - clamp(2rem, 6vw, 5.5rem));
     display: grid;
     place-items: center;
-    padding: clamp(2rem, 8vh, 4.35rem) clamp(1rem, 2.5vw, 2rem);
-    background: #FFFFFF;
+    padding: clamp(1rem, 3vw, 2.5rem);
+    border-radius: 1.75rem;
+    background: #F7F6FB;
 }
 
 .login-card {
-    width: min(100%, 1200px);
-    min-height: 614px;
+    width: min(100%, 1180px);
+    min-height: min(620px, calc(100svh - 7rem));
     display: grid;
     grid-template-columns: 0.96fr 1.04fr;
     overflow: hidden;
-    border-radius: 30px;
+    border: 1px solid rgb(17 5 89 / 7%);
+    border-radius: 26px;
     background: #FFFFFF;
-    box-shadow: 0 22px 38px rgb(17 5 89 / 14%);
+    box-shadow: 0 26px 70px rgb(17 5 89 / 17%);
 }
 
 .login-story,
@@ -33,8 +38,12 @@
 }
 
 .login-story {
-    padding: clamp(2rem, 4.1vw, 3.1rem);
-    background: var(--brand-blue);
+    position: relative;
+    overflow: hidden;
+    padding: clamp(2rem, 4vw, 3.5rem);
+    background:
+        radial-gradient(ellipse at 12% 100%, rgb(255 255 255 / 9%), transparent 42%),
+        var(--brand-blue);
 }
 
 .brand-lockup {
@@ -66,9 +75,11 @@
 }
 
 .monitor {
-    padding: 1rem 0.95rem 0.85rem;
-    border-radius: 16px;
+    padding: 1rem 1.05rem 0.9rem;
+    border: 1px solid rgb(17 5 89 / 8%);
+    border-radius: 17px;
     background: #FFFFFF;
+    box-shadow: 0 12px 28px rgb(7 3 45 / 16%);
 }
 
 .monitor-heading,
@@ -160,7 +171,7 @@
 }
 
 .login-panel {
-    padding: clamp(2.5rem, 5.5vw, 4rem);
+    padding: clamp(2rem, 5vw, 4.5rem);
     background: #FFFFFF;
 }
 
@@ -176,7 +187,7 @@
 .login-heading h1 {
     margin: 0;
     color: var(--brand-blue);
-    font-size: clamp(1.7rem, 3vw, 2rem);
+    font-size: clamp(1.8rem, 3vw, 2.25rem);
     letter-spacing: -0.035em;
     line-height: 1.2;
 }
@@ -200,7 +211,7 @@
 
 .login-form {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .form-field {
@@ -214,24 +225,27 @@
     font-weight: 700;
 }
 
-.form-field input {
+.form-field ::deep input {
     width: 100%;
-    min-height: 3.35rem;
-    padding: 0.75rem 0.9rem;
+    min-height: 3.15rem;
+    padding: 0.7rem 0.9rem;
     border: 1px solid var(--border);
-    border-radius: 12px;
-    background: #fff;
+    border-radius: 10px;
+    background: #FDFCFF;
     color: var(--text-primary);
     color-scheme: light;
     font: inherit;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
 }
 
-.form-field input:focus-visible {
-    outline: 3px solid var(--brand-blue);
-    outline-offset: 2px;
+.form-field ::deep input:focus-visible {
+    outline: 0;
+    border-color: var(--brand-blue);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgb(17 5 89 / 12%);
 }
 
-.form-field input:disabled {
+.form-field ::deep input:disabled {
     opacity: 0.75;
 }
 
@@ -248,21 +262,20 @@
 }
 
 .login-submit {
-    min-height: 3.2rem;
+    min-height: 3.15rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.55rem;
     margin-top: 0.25rem;
     border: 0;
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 160ms ease, transform 160ms ease;
 }
 
 .login-submit:hover:not(:disabled) {
@@ -294,7 +307,8 @@
 .demo-access {
     margin-top: 1.8rem;
     padding: 1rem 0.95rem;
-    border-radius: 11px;
+    border: 1px solid rgb(17 5 89 / 6%);
+    border-radius: 12px;
     background: var(--surface-raised);
     color: var(--text-secondary);
     font-size: 0.77rem;
@@ -317,6 +331,7 @@
 
 @media (max-width: 760px) {
     .login-page {
+        display: block;
         padding: 0;
     }
 
@@ -324,6 +339,7 @@
         min-height: 100svh;
         align-items: start;
         padding: 1rem;
+        border-radius: 0;
     }
 
     .login-card {
@@ -331,7 +347,7 @@
         min-height: 0;
         grid-template-columns: minmax(0, 1fr);
         margin: auto;
-        border-radius: 22px;
+        border-radius: 20px;
     }
 
     .login-story {
@@ -389,9 +405,5 @@
     .button-spinner,
     .session-spinner {
         animation: none;
-    }
-
-    .login-submit {
-        transition: none;
     }
 }

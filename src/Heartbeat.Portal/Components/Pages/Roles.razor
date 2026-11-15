@@ -5,21 +5,21 @@
 @inject MissionControlClient Client
 @inject MissionControlSession Session
 
-<PageTitle>Heartbeat | Roles y permisos</PageTitle>
+<PageTitle>Heartbeat | Roles & permissions</PageTitle>
 
 <RequirePermission Permission="@Permissions.RolesManage">
     <ChildContent>
         <section class="roles-page" aria-labelledby="roles-title">
             <header class="roles-heading">
                 <div>
-                    <h1 id="roles-title">Roles y permisos</h1>
-                    <p>Define qué puede hacer cada tipo de cuenta del portal.</p>
+                    <h1 id="roles-title">Roles & permissions</h1>
+                    <p>Define what each portal account type can do.</p>
                 </div>
                 @if (!_loading && !_forbidden && _error is null)
                 {
                     <button class="roles-button roles-button--primary"
                             type="button"
-                            @onclick="OpenCreateEditor">Crear rol</button>
+                            @onclick="OpenCreateEditor">Create role</button>
                 }
             </header>
 
@@ -27,22 +27,22 @@
             {
                 <div class="roles-state" role="status" aria-busy="true">
                     <span class="session-spinner" aria-hidden="true"></span>
-                    <span>Cargando roles…</span>
+                    <span>Loading roles…</span>
                 </div>
             }
             else if (_forbidden)
             {
                 <div class="roles-state" role="alert">
-                    <h2>Sin permiso para administrar roles</h2>
-                    <p>Tu cuenta no tiene el permiso roles.manage.</p>
+                    <h2>You don’t have permission to manage roles</h2>
+                    <p>Your account does not have roles.manage permission.</p>
                 </div>
             }
             else if (_error is not null)
             {
                 <div class="roles-state" role="alert">
-                    <h2>No se pudieron cargar los roles</h2>
+                    <h2>Could not load roles</h2>
                     <p>@_error</p>
-                    <button class="roles-button" type="button" @onclick="LoadAsync">Reintentar</button>
+                    <button class="roles-button" type="button" @onclick="LoadAsync">Retry</button>
                 </div>
             }
             else
@@ -50,10 +50,10 @@
                 @if (_editorOpen)
                 {
                     <form class="role-editor" @onsubmit="SaveAsync" @onsubmit:preventDefault>
-                        <h2>@(_editingRoleId is null ? "Nuevo rol" : "Editar rol")</h2>
+                        <h2>@(_editingRoleId is null ? "Nuevo rol" : "Edit rol")</h2>
 
                         <label class="role-editor-name">
-                            <span>Nombre</span>
+                            <span>Name</span>
                             <input @bind="_editorName"
                                    maxlength="50"
                                    required
@@ -63,8 +63,8 @@
                         @if (IsEditingOwnRole)
                         {
                             <p class="role-editor-hint">
-                                No puedes quitarte <code>users.manage</code> ni
-                                <code>roles.manage</code> de tu propio rol.
+                                You cannot remove <code>users.manage</code> or
+                                <code>roles.manage</code> from your own role.
                             </p>
                         }
 
@@ -97,12 +97,12 @@
                             <button class="roles-button roles-button--primary"
                                     type="submit"
                                     disabled="@(_saving || string.IsNullOrWhiteSpace(_editorName))">
-                                @(_saving ? "Guardando…" : "Guardar")
+                                @(_saving ? "Saving…" : "Save")
                             </button>
                             <button class="roles-button"
                                     type="button"
                                     disabled="@_saving"
-                                    @onclick="CloseEditor">Cancelar</button>
+                                    @onclick="CloseEditor">Cancel</button>
                         </div>
                     </form>
                 }
@@ -115,8 +115,8 @@
                 @if (_roles.Count == 0)
                 {
                     <div class="roles-state roles-empty">
-                        <h2>No hay roles definidos</h2>
-                        <p>Crea el primer rol con el botón de arriba.</p>
+                        <h2>No roles defined</h2>
+                        <p>Create the first role using the button above.</p>
                     </div>
                 }
                 else
@@ -132,17 +132,17 @@
                                     </div>
                                     @if (role.IsSystem)
                                     {
-                                        <span class="role-badge">Rol del sistema</span>
+                                        <span class="role-badge">System role</span>
                                     }
                                 </header>
 
                                 @if (role.Permissions.Count == 0)
                                 {
-                                    <p class="role-no-permissions">Sin permisos asignados.</p>
+                                    <p class="role-no-permissions">No permissions assigned.</p>
                                 }
                                 else
                                 {
-                                    <ul class="role-permissions" aria-label="Permisos de @role.Name">
+                                    <ul class="role-permissions" aria-label="Permissions for @role.Name">
                                         @foreach (var permission in role.Permissions)
                                         {
                                             <li @key="permission">@permission</li>
@@ -154,13 +154,13 @@
                                     <button class="roles-action"
                                             type="button"
                                             disabled="@(_saving || role.Name == RoleNames.Administrator)"
-                                            @onclick="() => OpenEditEditor(role)">Editar</button>
+                                            @onclick="() => OpenEditEditor(role)">Edit</button>
                                     @if (!role.IsSystem && role.UserCount == 0)
                                     {
                                         <button class="roles-action roles-action--danger"
                                                 type="button"
                                                 disabled="@_saving"
-                                                @onclick="() => DeleteAsync(role)">Eliminar</button>
+                                                @onclick="() => DeleteAsync(role)">Delete</button>
                                     }
                                 </div>
                             </article>
@@ -225,7 +225,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _error = "Comprueba la conexión e inténtalo de nuevo.";
+            _error = "Check your connection and try again.";
         }
         finally
         {
@@ -305,17 +305,17 @@
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
         {
-            _saveError = "El servidor rechazó el cambio. Revisa que el nombre no esté repetido, " +
-                         "que no quites users.manage/roles.manage de tu propio rol y que el rol " +
-                         "no sea el Administrator.";
+            _saveError = "The server rejected the change. Check that the name is unique, " +
+                         "that you keep users.manage/roles.manage on your own role and that the role " +
+                         "is not the Administrator.";
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
-            _saveError = "Tu cuenta no tiene el permiso roles.manage.";
+            _saveError = "Your account does not have roles.manage permission.";
         }
         catch (Exception)
         {
-            _saveError = "No se pudo guardar el rol. Comprueba la conexión e inténtalo de nuevo.";
+            _saveError = "Could not save the role. Check your connection and try again.";
         }
         finally
         {
@@ -335,15 +335,15 @@
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
         {
-            _actionError = "No se puede eliminar el rol: es un rol del sistema o todavía tiene usuarios asignados.";
+            _actionError = "Cannot delete this role: it is a system role or still has users assigned.";
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
-            _actionError = "Tu cuenta no tiene el permiso roles.manage.";
+            _actionError = "Your account does not have roles.manage permission.";
         }
         catch (Exception)
         {
-            _actionError = "No se pudo eliminar el rol. Comprueba la conexión e inténtalo de nuevo.";
+            _actionError = "Could not delete the role. Check your connection and try again.";
         }
         finally
         {
@@ -352,5 +352,5 @@
     }
 
     private static string UserCountLabel(int userCount) =>
-        userCount == 1 ? "1 usuario" : $"{userCount} usuarios";
+        userCount == 1 ? "1 user" : $"{userCount} users";
 }
