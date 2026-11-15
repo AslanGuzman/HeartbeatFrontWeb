@@ -333,6 +333,80 @@ public sealed class MissionControlClientTests
     }
 
     [TestMethod]
+    public async Task DomainProfilesEndpointReadsThresholdsFromTheServer()
+    {
+        var now = DateTimeOffset.UtcNow;
+        string? uri = null;
+        const string json = """
+            [{"id":"mining","name":"Mining","description":"Underground mine","environment":{"type":"mining","gravityG":1,"distanceKm":0,"crewSize":12,"habitableVolumeM3":500},
+              "status":"heuristic","source":{"title":"Profile source","url":"https://example.test"},"simulated":true,
+              "hazards":[{"hazard":"hostileClosedEnvironment","indicators":[{"indicatorId":"co2","name":"CO2","unit":"ppm","catalogStatus":"heuristic",
+              "source":{"title":"s","url":"https://example.test"},"overridden":true,
+              "bands":[{"status":"normal","min":null,"max":1000},{"status":"watch","min":1000,"max":5000},{"status":"critical","min":5000,"max":null}]}]}]}]
+            """;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            uri = request.RequestUri!.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+            });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var profiles = await client.GetDomainProfilesAsync();
+
+        Assert.AreEqual("/api/mc/v1/profiles", uri);
+        Assert.HasCount(1, profiles);
+        var indicator = profiles[0].Hazards[0].Indicators[0];
+        Assert.AreEqual(Hazard.HostileClosedEnvironment, profiles[0].Hazards[0].Hazard);
+        Assert.IsTrue(indicator.Overridden);
+        Assert.AreEqual(HealthStatus.Critical, indicator.Bands[2].Status);
+        Assert.AreEqual(1000m, indicator.Bands[1].Min);
+        Assert.IsNull(indicator.Bands[2].Max);
+    }
+
+    [TestMethod]
+    public async Task CrewRiskSendsTheSelectedProfileOnlyWhenOneIsChosen()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var uris = new List<string>();
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            uris.Add(request.RequestUri!.PathAndQuery);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"status":"normal","explanation":"ok","hazards":[],"profileId":"mining"}""",
+                    System.Text.Encoding.UTF8,
+                    "application/json")
+            });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var client = new MissionControlClient(
+            httpClient, new MissionControlTokenRefresher(httpClient, session, new StubSessionStore()));
+        var id = Guid.NewGuid();
+
+        await client.GetCrewRiskAsync(id);
+        var withProfile = await client.GetCrewRiskAsync(id, "mining");
+
+        Assert.AreEqual($"/api/mc/v1/crew/{id:D}/risk", uris[0]);
+        Assert.AreEqual($"/api/mc/v1/crew/{id:D}/risk?profile=mining", uris[1]);
+        Assert.AreEqual("mining", withProfile.ProfileId);
+    }
+
+    [TestMethod]
     public async Task MessageEndpointsListSendAndMarkMessagesRead()
     {
         var now = DateTimeOffset.UtcNow;

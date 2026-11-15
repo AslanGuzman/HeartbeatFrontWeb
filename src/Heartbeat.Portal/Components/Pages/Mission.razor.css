@@ -263,3 +263,28 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+.mission-profile-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.mission-profile-picker label {
+    font-weight: 700;
+}
+
+.mission-profile-picker select {
+    min-width: 12rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: inherit;
+}
+
+.mission-picker-note {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}

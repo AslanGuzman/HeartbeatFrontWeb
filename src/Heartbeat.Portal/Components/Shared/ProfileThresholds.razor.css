@@ -1,0 +1,73 @@
+.profile-thresholds {
+    display: grid;
+    gap: 0.9rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.profile-thresholds header {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.profile-thresholds h3,
+.profile-hazard h4 {
+    margin: 0;
+    color: var(--brand-blue);
+}
+
+.profile-thresholds p,
+.profile-thresholds small {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.profile-hazard ul {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.profile-bands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+}
+
+.profile-band {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.82rem;
+}
+
+.profile-band > span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.profile-band--normal {
+    border-color: transparent;
+    background: #EAF6ED;
+    color: #165D2D;
+}
+
+.profile-band--watch {
+    border-color: transparent;
+    background: #FFF3D4;
+    color: #704900;
+}
+
+.profile-band--critical {
+    border-color: transparent;
+    background: #FCEAEA;
+    color: var(--brand-red);
+}
