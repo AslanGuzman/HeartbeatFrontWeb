@@ -15,6 +15,16 @@
             </RequirePermission>
         </li>
         <li>
+            <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/fc-en-vivo" Match="NavLinkMatch.Prefix">FC en vivo</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
+            <RequirePermission Permission="@Permissions.CrewView">
+                <NavLink href="/salud" Match="NavLinkMatch.Prefix">Resumen de salud</NavLink>
+            </RequirePermission>
+        </li>
+        <li>
             <RequirePermission Permission="@Permissions.AlertsView">
                 <NavLink href="/alerts" Match="NavLinkMatch.Prefix">
                     <span>Alerts</span>
