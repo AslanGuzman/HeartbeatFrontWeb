@@ -1,0 +1,224 @@
+.phantoms-page {
+    display: grid;
+    gap: 1.4rem;
+}
+
+.phantoms-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.phantoms-heading h1 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: clamp(1.8rem, 4vw, 2.3rem);
+    letter-spacing: -0.025em;
+}
+
+.phantoms-heading p,
+.phantoms-context,
+.phantoms-note,
+.phantoms-disclaimer {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.phantoms-badge {
+    flex: none;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--brand-blue);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.phantoms-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.phantoms-profiles,
+.phantoms-environment,
+.phantom-chart-card,
+.phantoms-state {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.phantoms-profiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    min-width: min(100%, 30rem);
+    margin: 0;
+}
+
+.phantoms-profiles legend,
+.phantoms-environment > span {
+    padding: 0 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.phantoms-profile {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 8rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    cursor: pointer;
+}
+
+.phantoms-profile input {
+    margin-top: 0.2rem;
+    accent-color: var(--brand-blue);
+}
+
+.phantoms-profile span {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.phantoms-profile strong {
+    color: var(--brand-blue);
+    font-size: 0.82rem;
+}
+
+.phantoms-profile small {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+}
+
+.phantoms-profile:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.phantoms-environment {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 13rem;
+}
+
+.phantoms-environment select {
+    min-height: 2.4rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.phantoms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    gap: 1rem;
+}
+
+.phantom-chart-card {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.phantom-chart-card header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.phantom-chart-card h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 0.95rem;
+}
+
+.phantom-chart-card header span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.phantom-chart-frame {
+    position: relative;
+    height: 14rem;
+}
+
+.phantom-chart-frame canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.phantoms-context,
+.phantoms-note,
+.phantoms-disclaimer {
+    margin: 0;
+    font-size: 0.82rem;
+}
+
+.phantoms-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+}
+
+.phantoms-state h2,
+.phantoms-state p {
+    margin: 0;
+}
+
+.phantoms-state h2 {
+    color: var(--brand-blue);
+    font-size: 1.05rem;
+}
+
+.phantoms-state p {
+    color: var(--text-secondary);
+}
+
+.phantoms-button {
+    min-height: 2.4rem;
+    width: fit-content;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.phantoms-disclaimer {
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border);
+}
+
+@media (max-width: 42rem) {
+    .phantoms-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .phantoms-controls {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .phantoms-profile {
+        flex: 1 1 100%;
+    }
+}

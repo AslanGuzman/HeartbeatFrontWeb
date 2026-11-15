@@ -59,6 +59,27 @@ public sealed class MissionControlClient(
         CancellationToken cancellationToken = default) =>
         GetAsync<RiskStatusResponse>($"crew/{astronautId:D}/risk", cancellationToken);
 
+    public Task<PhantomComparisonResponse> GetPhantomComparisonAsync(
+        IReadOnlyCollection<Guid>? profileIds = null,
+        string environment = "station",
+        int weeks = 26,
+        decimal exerciseHours = 7,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>();
+        if (profileIds is { Count: > 0 })
+        {
+            query.Add($"profiles={string.Join(",", profileIds.Select(id => Uri.EscapeDataString(id.ToString("D"))))}");
+        }
+
+        query.Add($"environment={Uri.EscapeDataString(environment)}");
+        query.Add($"weeks={weeks.ToString(CultureInfo.InvariantCulture)}");
+        query.Add($"exerciseHours={exerciseHours.ToString(CultureInfo.InvariantCulture)}");
+        return GetAsync<PhantomComparisonResponse>(
+            $"phantoms/compare?{string.Join("&", query)}",
+            cancellationToken);
+    }
+
     public Task<AstronautProfile> GetCrewMemberAsync(
         Guid astronautId,
         CancellationToken cancellationToken = default) =>

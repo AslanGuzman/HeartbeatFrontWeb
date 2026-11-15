@@ -635,6 +635,87 @@ public sealed class MissionControlClientTests
         Assert.IsTrue(requestedUri.Contains("to=", StringComparison.Ordinal));
     }
 
+    [TestMethod]
+    public async Task PhantomComparisonSendsSelectedProfilesAndEnvironment()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var firstId = Guid.NewGuid();
+        var secondId = Guid.NewGuid();
+        string? requestedUri = null;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((request, _) =>
+        {
+            requestedUri = request.RequestUri!.PathAndQuery;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new
+                {
+                    environment = "lunarBase",
+                    environmentName = "Lunar base",
+                    gravityG = 0.16m,
+                    weeks = 26,
+                    exerciseHoursPerWeek = 7m,
+                    status = "heuristic",
+                    source = new { title = "Catalog", url = "https://example.test/catalog" },
+                    series = new[]
+                    {
+                        new
+                        {
+                            phantom = new
+                            {
+                                id = firstId,
+                                name = "Phantom A",
+                                sex = "female",
+                                ageYears = 35,
+                                massKg = 62m
+                            },
+                            points = new[]
+                            {
+                                new
+                                {
+                                    week = 0,
+                                    boneChangePercent = 0m,
+                                    muscleChangePercent = 0m,
+                                    fluidChangePercent = 0m,
+                                    iopChangeMmHg = 0m
+                                }
+                            },
+                            final = new
+                            {
+                                week = 0,
+                                boneChangePercent = 0m,
+                                muscleChangePercent = 0m,
+                                fluidChangePercent = 0m,
+                                iopChangeMmHg = 0m
+                            }
+                        }
+                    },
+                    note = "Simulated",
+                    simulated = true
+                })
+            });
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var result = await client.GetPhantomComparisonAsync(
+            [firstId, secondId],
+            "lunarBase");
+
+        Assert.AreEqual("Lunar base", result.EnvironmentName);
+        Assert.AreEqual(firstId, result.Series[0].Phantom.Id);
+        Assert.IsTrue(requestedUri!.Contains($"profiles={firstId:D},{secondId:D}", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("environment=lunarBase", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("weeks=26", StringComparison.Ordinal));
+        Assert.IsTrue(requestedUri.Contains("exerciseHours=7", StringComparison.Ordinal));
+    }
+
     private sealed class StubSessionStore : IMissionControlSessionStore
     {
         public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
