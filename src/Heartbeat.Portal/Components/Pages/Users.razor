@@ -1,0 +1,365 @@
+@page "/users"
+@using System.Net
+@using System.Text.Json
+@using Heartbeat.Shared
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+@inject AlertCounterState AlertCounter
+
+<PageTitle>Heartbeat | Administración de usuarios</PageTitle>
+
+<RequirePermission Permission="@Permissions.UsersManage">
+    <ChildContent>
+        <section class="users-page" aria-labelledby="users-title">
+            <header class="users-heading">
+                <div>
+                    <h1 id="users-title">Usuarios del portal</h1>
+                    <p>Gestión de cuentas y roles.</p>
+                </div>
+                <div>
+                    @if (Session.HasPermission(Permissions.RolesManage))
+                    {
+                        <button class="users-button users-button--primary"
+                                type="button"
+                                @onclick="OpenCreateRoleModal">Crear rol</button>
+                    }
+                </div>
+            </header>
+
+            @if (_loading)
+            {
+                <div class="users-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando usuarios…</span>
+                </div>
+            }
+            else if (_forbidden)
+            {
+                <div class="users-state" role="alert">
+                    <h2>Sin permiso para ver los usuarios</h2>
+                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                </div>
+            }
+            else if (_loadError is not null)
+            {
+                <div class="users-state" role="alert">
+                    <h2>No se pudieron cargar los usuarios</h2>
+                    <p>@_loadError</p>
+                    <button class="users-button" type="button" @onclick="LoadUsersAsync">Reintentar</button>
+                </div>
+            }
+            else if (_users is null || _users.Items.Count == 0)
+            {
+                <div class="users-state users-empty">
+                    <h2>No hay usuarios registrados</h2>
+                    <p>Los usuarios aparecerán aquí.</p>
+                </div>
+            }
+            else
+            {
+                <div class="users-list">
+                    @foreach (var user in _users.Items)
+                    {
+                        <article @key="user.Id"
+                                 class="user-card @(user.IsActive ? "" : "user-card--inactive")">
+                            <header class="user-card-heading">
+                                <div>
+                                    <h2>@user.DisplayName</h2>
+                                    <p class="user-username">@user.UserName</p>
+                                </div>
+                                <span class="user-status @(user.IsActive ? "status-active" : "status-inactive")">
+                                    @(user.IsActive ? "Activo" : "Inactivo")
+                                </span>
+                            </header>
+
+                            <dl class="user-details">
+                                <div>
+                                    <dt>Correo</dt>
+                                    <dd>@user.Email</dd>
+                                </div>
+                                <div>
+                                    <dt>Rol</dt>
+                                    <dd>@user.Role.Name</dd>
+                                </div>
+                                <div>
+                                    <dt>Permisos</dt>
+                                    <dd>
+                                        @foreach (var perm in user.Permissions)
+                                        {
+                                            <span @key="perm" class="user-permission">@perm</span>
+                                        }
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            <div class="user-actions">
+                                @if (Session.HasPermission(Permissions.UsersManage))
+                                {
+                                    <button class="users-action users-action--small"
+                                            type="button"
+                                            @onclick="() => OpenUpdateModal(user.Id)">Editar</button>
+                                    <button class="users-action users-action--small users-action--danger"
+                                            type="button"
+                                            @onclick="async () => await ToggleUserStatusAsync(user.Id)">@(user.IsActive ? "Desactivar" : "Activar")</button>
+                                }
+                                @if (Session.HasPermission(Permissions.RolesManage) && user.Role.IsSystem == false)
+                                {
+                                    <button class="users-action users-action--small"
+                                            type="button"
+                                            @onclick="() => OpenSetRoleModal(user.Id)">Cambiar rol</button>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <nav class="users-pagination" aria-label="Páginas de usuarios">
+                    <span>Página @_page de @PageCount</span>
+                    <div>
+                        <button class="users-button users-button--secondary"
+                                type="button"
+                                disabled="@(_page <= 1 || _loading)"
+                                @onclick="PreviousPageAsync">Anterior</button>
+                        <button class="users-button users-button--secondary"
+                                type="button"
+                                disabled="@(_page >= PageCount || _loading)"
+                                @onclick="NextPageAsync">Siguiente</button>
+                    </div>
+                </nav>
+            }
+
+            @if (_showCreateUserModal || _showUpdateModal || _showSetRoleModal)
+            {
+                <div class="users-overlay"
+                     @onclick="CloseModals"
+                 @ondblclick="CloseModals">
+                    <div class="users-modal">
+                        @if (_showCreateUserModal) { <CreateUserForm /> }
+                        else if (_showUpdateModal) { <UpdateUserForm /> }
+                        else if (_showSetRoleModal) { <SetRoleForm /> }
+                    </div>
+                </div>
+            }
+        </section>
+    </ChildContent>
+</RequirePermission>
+
+@code {
+    private const int PageSize = 20;
+    private int _page = 1;
+    private Paged<PortalUserDto>? _users;
+    private bool _loading = true;
+    private bool _forbidden;
+    private string? _loadError;
+    private bool _showCreateUserModal;
+    private bool _showUpdateModal;
+    private bool _showSetRoleModal;
+    private Guid? _editingUserId;
+    private string _newUserName = string.Empty;
+    private string _newEmail = string.Empty;
+    private string _newDisplayName = string.Empty;
+    private string _newPassword = string.Empty;
+    private Guid _newRoleId;
+    private string _updateUserName = string.Empty;
+    private string _updateEmail = string.Empty;
+    private string _updateDisplayName = string.Empty;
+    private Guid _updateRoleId;
+    private string _newRoleName = string.Empty;
+    private IReadOnlyList<string> _newRolePermissions = new List<string>();
+    private Guid? _toggleUserId;
+
+    private int PageCount =>
+        _users is null ? 1 : Math.Max(1, (int)Math.Ceiling((double)_users.Total / PageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Session.HasPermission(Permissions.UsersView))
+        {
+            await LoadUsersAsync();
+        }
+        else
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        _loading = true;
+        _forbidden = false;
+        _loadError = null;
+
+        try
+        {
+            _users = await Client.GetUsersAsync("all", _page, PageSize);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _loadError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task ShowAllUsersAsync() => ChangePage(1);
+    private Task ShowOpenUsersAsync() => ChangePage(1);
+    private Task ChangePage(int page)
+    {
+        _page = page;
+        return LoadUsersAsync();
+    }
+
+    private Task PreviousPageAsync() => ChangePage(_page - 1);
+    private Task NextPageAsync() => ChangePage(_page + 1);
+
+    private void OpenCreateRoleModal()
+    {
+        _showSetRoleModal = true;
+        _newRoleName = string.Empty;
+        _newRolePermissions = new List<string>();
+    }
+
+    private void OpenCreateUserModal()
+    {
+        _showCreateUserModal = true;
+        _newUserName = string.Empty;
+        _newEmail = string.Empty;
+        _newDisplayName = string.Empty;
+        _newPassword = string.Empty;
+        _newRoleId = Guid.Empty;
+    }
+
+    private void CloseModals()
+    {
+        _showCreateUserModal = false;
+        _showUpdateModal = false;
+        _showSetRoleModal = false;
+        _editingUserId = null;
+    }
+
+    private void OpenUpdateModal(Guid userId)
+    {
+        _editingUserId = userId;
+        _showUpdateModal = true;
+        _updateUserName = string.Empty;
+        _updateEmail = string.Empty;
+        _updateDisplayName = string.Empty;
+        _updateRoleId = Guid.Empty;
+    }
+
+    private void OpenSetRoleModal(Guid userId)
+    {
+        _editingUserId = userId;
+        _showSetRoleModal = true;
+        _newRoleName = string.Empty;
+        _newRolePermissions = new List<string>();
+    }
+
+    private async Task CreateUserAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newUserName) ||
+            string.IsNullOrWhiteSpace(_newEmail) ||
+            string.IsNullOrWhiteSpace(_newDisplayName) ||
+            string.IsNullOrWhiteSpace(_newPassword))
+        {
+            return;
+        }
+
+        _showCreateUserModal = false;
+        try
+        {
+            await Client.CreateUserAsync(new CreateUserRequest(
+                _newUserName,
+                _newEmail,
+                _newDisplayName,
+                _newPassword,
+                _newRoleId));
+            await LoadUsersAsync();
+        }
+        catch (Exception)
+        {
+            // Show error - would need an error state
+        }
+    }
+
+    private async Task UpdateUserAsync()
+    {
+        if (_editingUserId is null) return;
+        if (string.IsNullOrWhiteSpace(_updateUserName) ||
+            string.IsNullOrWhiteSpace(_updateEmail) ||
+            string.IsNullOrWhiteSpace(_updateDisplayName))
+        {
+            return;
+        }
+
+        _showUpdateModal = false;
+        try
+        {
+            await Client.UpdateUserAsync(_editingUserId.Value, new UpdateUserRequest(
+                _updateEmail,
+                _updateDisplayName));
+            await LoadUsersAsync();
+        }
+        catch (Exception)
+        {
+            // Show error
+        }
+    }
+
+    private async Task SetRoleAsync()
+    {
+        if (_editingUserId is null) return;
+        if (string.IsNullOrWhiteSpace(_newRoleName) || _newRolePermissions.Count == 0) return;
+
+        _showSetRoleModal = false;
+        try
+        {
+            await Client.CreateRoleAsync(_newRoleName, _newRolePermissions);
+            await LoadUsersAsync();
+        }
+        catch (Exception)
+        {
+            // Show error
+        }
+    }
+
+    private async Task ToggleUserStatusAsync(Guid userId)
+    {
+        _toggleUserId = userId;
+        try
+        {
+            var users = await Client.GetUsersAsync();
+            var user = users.Items?.FirstOrDefault(u => u.Id == _toggleUserId.Value);
+            if (user is not null)
+            {
+                if (user.IsActive)
+                {
+                    await Client.DisableUserAsync(_toggleUserId.Value);
+                }
+                else
+                {
+                    await Client.EnableUserAsync(_toggleUserId.Value);
+                }
+                await LoadUsersAsync();
+            }
+        }
+        catch (Exception)
+        {
+            // Show error
+        }
+        finally
+        {
+            _toggleUserId = null;
+        }
+    }
+}

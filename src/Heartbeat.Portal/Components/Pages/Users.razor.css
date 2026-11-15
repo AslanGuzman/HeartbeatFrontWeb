@@ -1,0 +1,240 @@
+.users-page {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.users-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.users-heading h1 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: clamp(1.8rem, 4vw, 2.3rem);
+    letter-spacing: -0.025em;
+}
+
+.users-heading p {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.users-heading .users-button {
+    min-height: 2.4rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.users-heading .users-button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.users-list {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.user-card {
+    display: grid;
+    gap: 0.95rem;
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.user-card--inactive {
+    opacity: 0.7;
+}
+
+.user-card-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.user-card-heading h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 1.08rem;
+}
+
+.user-username {
+    margin: 0.3rem 0 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.user-status {
+    flex: none;
+    padding: 0.45rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.user-status--active {
+    background: #EAF6ED;
+    color: #165D2D;
+}
+
+.user-status--inactive {
+    background: #FCEAEA;
+    color: var(--brand-red);
+}
+
+.user-details {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 0.7rem 1.1rem;
+    margin: 0;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--border);
+}
+
+.user-details dt {
+    color: var(--text-secondary);
+    font-size: 0.74rem;
+}
+
+.user-details dd {
+    margin: 0.25rem 0 0;
+    color: var(--brand-blue);
+    font-size: 0.88rem;
+    font-weight: 650;
+}
+
+.user-details dd .user-permission {
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.users-action {
+    min-height: 2.4rem;
+    width: fit-content;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.users-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.users-action--danger {
+    background: #990E0E;
+    border-color: #990E0E;
+}
+
+.users-action--small {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.74rem;
+}
+
+.users-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.users-empty {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.users-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.users-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.2s ease-out;
+}
+
+@keyframes modalIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.users-button--primary {
+    min-height: 2.4rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.users-button--primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 42rem) {
+    .users-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .user-details {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .users-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
