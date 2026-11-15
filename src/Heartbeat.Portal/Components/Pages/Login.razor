@@ -4,7 +4,7 @@
 @inject MissionControlAuthentication Authentication
 @inject NavigationManager Navigation
 
-<PageTitle>Heartbeat | Iniciar sesión</PageTitle>
+<PageTitle>Heartbeat | Sign in</PageTitle>
 
 <main class="login-page">
     <div class="login-canvas">
@@ -17,16 +17,16 @@
                         </svg>
                         <span>Heartbeat</span>
                     </div>
-                    <p>Tu salud, incluso sin señal.</p>
+                    <p>Your health, even off the grid.</p>
                 </div>
 
-                <section class="monitor" aria-label="Monitor cardíaco simulado">
+                <section class="monitor" aria-label="Simulated heart rate monitor">
                     <div class="monitor-heading">
                         <span>HEART RATE MONITOR</span>
                         <span class="live-indicator"><i aria-hidden="true"></i> LIVE SIMULATION</span>
                     </div>
                     <svg class="ecg" viewBox="0 0 280 90" preserveAspectRatio="none" role="img"
-                         aria-label="Animación de una señal cardíaca simulada">
+                         aria-label="Animated simulated heart rate signal">
                         <defs>
                             <filter id="ecg-glow">
                                 <feGaussianBlur stdDeviation="3.2" result="blur" />
@@ -42,16 +42,16 @@
                         </g>
                     </svg>
                     <div class="monitor-footer">
-                        <span>MONITOREO CARDÍACO</span>
+                        <span>HEART RATE MONITORING</span>
                         <span class="bpm"><span aria-hidden="true">♥</span> 72 BPM</span>
                     </div>
                 </section>
 
                 <div class="mission-copy">
-                    <h2>Tu misión es importante.</h2>
+                    <h2>Your mission matters.</h2>
                     <p>
-                        Monitorea tus signos vitales, registra tus chequeos y cuida de tu salud
-                        durante toda la misión espacial.
+                        Track your vital signs, record your checkups, and take care of your health
+                        throughout your space mission.
                     </p>
                 </div>
             </section>
@@ -59,40 +59,40 @@
             <section class="login-panel" aria-labelledby="login-title">
                 <div class="login-content">
                     <header class="login-heading">
-                        <h1 id="login-title">Bienvenido de vuelta</h1>
-                        <p>Accede a tu perfil de Heartbeat.</p>
+                        <h1 id="login-title">Welcome back</h1>
+                        <p>Sign in to your Heartbeat account.</p>
                     </header>
 
                     @if (Expired)
                     {
-                        <p class="session-notice" role="status">Tu sesión expiró. Inicia sesión para continuar.</p>
+                        <p class="session-notice" role="status">Your session expired. Sign in to continue.</p>
                     }
                     else if (Connection)
                     {
-                        <p class="session-notice" role="status">No se pudo conectar con Mission Control. Inténtalo de nuevo.</p>
+                        <p class="session-notice" role="status">Could not connect to Mission Control. Please try again.</p>
                     }
 
                     <EditForm Model="_form" OnValidSubmit="SubmitAsync" class="login-form">
                         <DataAnnotationsValidator />
                         <div class="form-field">
-                            <label for="username">USUARIO</label>
+                            <label for="username">USERNAME</label>
                             <InputText id="username"
                                        @bind-Value="_form.UserName"
                                        autocomplete="username"
                                        spellcheck="false"
                                        disabled="@_submitting"
-                                       aria-label="Usuario" />
+                                       aria-label="Username" />
                             <ValidationMessage For="@(() => _form.UserName)" />
                         </div>
 
                         <div class="form-field">
-                            <label for="password">CONTRASEÑA</label>
+                            <label for="password">PASSWORD</label>
                             <InputText id="password"
                                        type="password"
                                        @bind-Value="_form.Password"
                                        autocomplete="current-password"
                                        disabled="@_submitting"
-                                       aria-label="Contraseña" />
+                                       aria-label="Password" />
                             <ValidationMessage For="@(() => _form.Password)" />
                         </div>
 
@@ -105,24 +105,24 @@
                             @if (_submitting)
                             {
                                 <span class="button-spinner" aria-hidden="true"></span>
-                                <span>Entrando…</span>
+                                <span>Signing in…</span>
                             }
                             else if (_initializing)
                             {
-                                <span>Verificando sesión…</span>
+                                <span>Checking session…</span>
                             }
                             else
                             {
-                                <span>Entrar <span aria-hidden="true">→</span></span>
+                                <span>Sign in <span aria-hidden="true">→</span></span>
                             }
                         </button>
                     </EditForm>
 
                     <aside class="demo-access" aria-labelledby="demo-title">
-                        <h2 id="demo-title">Accesos de demostración</h2>
-                        <p>Usa una cuenta activa de Control de misión.</p>
-                        <p>Las cuentas y credenciales dependen del entorno de desarrollo.</p>
-                        <p>Las cuentas de tripulación inician sesión en su aplicación.</p>
+                        <h2 id="demo-title">Demo access</h2>
+                        <p>Usa una cuenta activa de Mission Control.</p>
+                        <p>Demo accounts and credentials depend on the development environment.</p>
+                        <p>Crew accounts sign in through their own app.</p>
                     </aside>
                 </div>
             </section>
@@ -164,7 +164,7 @@
                 System.Text.Json.JsonException or
                 TaskCanceledException)
         {
-            _error = "No se pudo comprobar la sesión. Inténtalo de nuevo.";
+            _error = "Could not verify your session. Please try again.";
         }
         finally
         {
@@ -192,16 +192,16 @@
                     Navigation.NavigateTo("/", replace: true);
                     break;
                 case MissionControlLoginResult.InvalidCredentials:
-                    _error = "El usuario o la contraseña no son correctos.";
+                    _error = "The username or password is incorrect.";
                     break;
                 case MissionControlLoginResult.InactiveAccount:
-                    _error = "Esta cuenta no está activa o ya no tiene acceso.";
+                    _error = "This account is inactive or no longer has access.";
                     break;
                 case MissionControlLoginResult.Forbidden:
-                    _error = "Tu cuenta no tiene permiso para acceder al portal.";
+                    _error = "Your account does not have permission to access the portal.";
                     break;
                 default:
-                    _error = "No se pudo conectar con Mission Control. Inténtalo de nuevo.";
+                    _error = "Could not connect to Mission Control. Please try again.";
                     break;
             }
         }
@@ -213,10 +213,10 @@
 
     private sealed class LoginForm
     {
-        [Required(ErrorMessage = "Escribe tu usuario.")]
+        [Required(ErrorMessage = "Enter your username.")]
         public string UserName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Escribe tu contraseña.")]
+        [Required(ErrorMessage = "Enter your password.")]
         public string Password { get; set; } = string.Empty;
     }
 }

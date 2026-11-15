@@ -15,41 +15,41 @@
         {
             <div class="crew-member-state" role="status" aria-busy="true">
                 <span class="session-spinner" aria-hidden="true"></span>
-                <span>Cargando perfil…</span>
+                <span>Loading profile…</span>
             </div>
         }
         else if (_profileForbidden)
         {
             <div class="crew-member-state" role="alert">
-                <h1>Sin permiso para ver este perfil</h1>
-                <p>Tu cuenta no tiene el permiso necesario.</p>
+                <h1>You don’t have permission to view this profile</h1>
+                <p>Your account does not have the required permission.</p>
             </div>
         }
         else if (_profileNotFound)
         {
             <div class="crew-member-state" role="alert">
-                <h1>Perfil no disponible</h1>
-                <p>No se encontró este astronauta.</p>
-                <a href="/crew">Volver a la tripulación</a>
+                <h1>Profile unavailable</h1>
+                <p>Astronaut not found.</p>
+                <a href="/crew">Back to crew</a>
             </div>
         }
         else if (_profileError is not null)
         {
             <div class="crew-member-state" role="alert">
-                <h1>No se pudo cargar el perfil</h1>
+                <h1>Could not load profile</h1>
                 <p>@_profileError</p>
-                <button class="crew-member-retry" type="button" @onclick="LoadPageAsync">Reintentar</button>
+                <button class="crew-member-retry" type="button" @onclick="LoadPageAsync">Retry</button>
             </div>
         }
         else if (_astronaut is not null)
         {
             <section class="astronaut-detail" aria-labelledby="astronaut-name">
-                <a class="crew-member-back" href="/crew">Volver a la tripulación</a>
+                <a class="crew-member-back" href="/crew">Back to crew</a>
 
                 <header class="astronaut-heading">
                     <div>
                         <h1 id="astronaut-name">@_astronaut.DisplayName</h1>
-                        <p>@(_astronaut.CallSign ?? "Sin indicativo") · @_astronaut.Mission.Name</p>
+                        <p>@(_astronaut.CallSign ?? "No call sign") · @_astronaut.Mission.Name</p>
                     </div>
                     @if (_status is not null)
                     {
@@ -59,19 +59,19 @@
                     }
                 </header>
 
-                <section class="astronaut-profile" aria-label="Información del astronauta">
+                <section class="astronaut-profile" aria-label="Astronaut information">
                     <span class="astronaut-avatar" aria-hidden="true">@Initial(_astronaut.DisplayName)</span>
                     <dl>
                         <div>
-                            <dt>Entorno</dt>
+                            <dt>Environment</dt>
                             <dd>@_astronaut.Mission.Environment</dd>
                         </div>
                         <div>
-                            <dt>Inicio de misión</dt>
+                            <dt>Mission start</dt>
                             <dd>@FormatTimestamp(_astronaut.Mission.StartsAt)</dd>
                         </div>
                         <div>
-                            <dt>Perfil actualizado</dt>
+                            <dt>Profile updated</dt>
                             <dd>@FormatTimestamp(_astronaut.UpdatedAt)</dd>
                         </div>
                     </dl>
@@ -80,15 +80,15 @@
                 <section class="vitals-section" aria-labelledby="vitals-title">
                     <header class="section-heading">
                         <div>
-                            <h2 id="vitals-title">Estado actual</h2>
+                            <h2 id="vitals-title">Current status</h2>
                             <p>
                                 @if (_status?.LastSyncAt is { } lastSync)
                                 {
-                                    <span>Última sincronización: @FormatTimestamp(lastSync)</span>
+                                    <span>Last sync: @FormatTimestamp(lastSync)</span>
                                 }
                                 else
                                 {
-                                    <span>Sin chequeos sincronizados</span>
+                                    <span>No checkups synced</span>
                                 }
                             </p>
                         </div>
@@ -97,30 +97,30 @@
                     @if (!Session.HasPermission(Permissions.VitalsView))
                     {
                         <div class="crew-member-state">
-                            <h3>Signos vitales no disponibles</h3>
-                            <p>Tu cuenta no tiene el permiso para consultar el estado clínico.</p>
+                            <h3>Vital signs unavailable</h3>
+                            <p>Your account does not have permission to view health status.</p>
                         </div>
                     }
                     else if (_statusLoading)
                     {
                         <div class="crew-member-state" role="status" aria-busy="true">
                             <span class="session-spinner" aria-hidden="true"></span>
-                            <span>Cargando indicadores…</span>
+                            <span>Loading indicators…</span>
                         </div>
                     }
                     else if (_statusForbidden)
                     {
                         <div class="crew-member-state" role="alert">
-                            <h3>Sin permiso para consultar los indicadores</h3>
-                            <p>Tu cuenta no tiene el permiso <code>vitals.view</code>.</p>
+                            <h3>You don’t have permission to view indicators</h3>
+                            <p>Your account does not have <code>vitals.view</code> permission.</p>
                         </div>
                     }
                     else if (_statusError is not null)
                     {
                         <div class="crew-member-state" role="alert">
-                            <h3>No se pudieron cargar los indicadores</h3>
+                            <h3>Could not load indicators</h3>
                             <p>@_statusError</p>
-                            <button class="crew-member-retry" type="button" @onclick="LoadStatusAsync">Reintentar</button>
+                            <button class="crew-member-retry" type="button" @onclick="LoadStatusAsync">Retry</button>
                         </div>
                     }
                     else if (_status is not null)
@@ -134,7 +134,7 @@
                             <figure class="body-map-panel">
                                 <figcaption>
                                     <strong>Mapa corporal</strong>
-                                    <span>Las zonas resumen los indicadores registrados.</span>
+                                    <span>The regions summarize recorded indicators.</span>
                                 </figcaption>
                                 @{
                                     var headClass = StatusKey(RegionStatus("head"));
@@ -147,7 +147,7 @@
                                      aria-labelledby="body-map-title body-map-description">
                                     <title id="body-map-title">Mapa corporal de indicadores</title>
                                     <desc id="body-map-description">
-                                        La cabeza agrupa temperatura, sueño y ánimo; el pecho, presión arterial y frecuencia cardíaca; el abdomen, glucosa.
+                                        The head groups temperature, sleep, and mood; the chest, blood pressure and heart rate; the abdomen, glucose.
                                     </desc>
                                     <circle class="figure-part" cx="110" cy="42" r="23" />
                                     <path class="figure-part" d="M101 65h18v18h-18z" />
@@ -163,15 +163,15 @@
                                     <circle class="map-dot map-dot--@heartClass" cx="110" cy="125" r="7" />
                                     <circle class="map-dot map-dot--@abdomenClass" cx="110" cy="174" r="7" />
                                 </svg>
-                                <div class="map-legend" aria-label="Estados">
+                                <div class="map-legend" aria-label="Statuses">
                                     <span><i class="legend-dot legend-dot--normal"></i>Normal</span>
-                                    <span><i class="legend-dot legend-dot--watch"></i>Observación</span>
-                                    <span><i class="legend-dot legend-dot--critical"></i>Crítico</span>
-                                    <span><i class="legend-dot legend-dot--unknown"></i>Sin datos</span>
+                                    <span><i class="legend-dot legend-dot--watch"></i>Watch</span>
+                                    <span><i class="legend-dot legend-dot--critical"></i>Critical</span>
+                                    <span><i class="legend-dot legend-dot--unknown"></i>No data</span>
                                 </div>
                             </figure>
 
-                            <div class="indicator-grid" aria-label="Seis indicadores actuales">
+                            <div class="indicator-grid" aria-label="Six current indicators">
                                 @foreach (var indicatorType in Enum.GetValues<IndicatorType>())
                                 {
                                     var indicatorStatus = CurrentIndicator(indicatorType);
@@ -193,24 +193,24 @@
                                             }
                                             else
                                             {
-                                                <span class="health-chip health-chip--unknown">Sin registro</span>
+                                                <span class="health-chip health-chip--unknown">No record</span>
                                             }
                                         </header>
 
                                         <strong class="indicator-value">
                                             @(indicatorStatus is null
-                                                ? "Sin registro"
+                                                ? "No record"
                                                 : FormatIndicatorValue(indicatorStatus.Value, indicatorStatus.SecondaryValue, indicatorStatus.Unit))
                                         </strong>
                                         @if (indicatorStatus is not null)
                                         {
-                                            <span class="indicator-recorded">Registrado: @FormatTimestamp(indicatorStatus.RecordedAt)</span>
+                                            <span class="indicator-recorded">Recorded: @FormatTimestamp(indicatorStatus.RecordedAt)</span>
                                         }
 
                                         @if (definition is { } indicatorDefinition)
                                         {
                                             <details class="indicator-reference">
-                                                <summary>Información y fuentes</summary>
+                                                <summary>Information & sources</summary>
                                                 @if (GetJsonString(indicatorDefinition, "whyItMatters") is { } why)
                                                 {
                                                     <p>@why</p>
@@ -221,7 +221,7 @@
                                                 }
                                                 @if (GetJsonArray(indicatorDefinition, "howToMeasure") is { } measurementSteps)
                                                 {
-                                                    <strong>Cómo medir</strong>
+                                                    <strong>How to measure</strong>
                                                     <ul>
                                                         @foreach (var step in measurementSteps.EnumerateArray())
                                                         {
@@ -229,7 +229,7 @@
                                                         }
                                                     </ul>
                                                 }
-                                                <strong>Fuentes</strong>
+                                                <strong>Sources</strong>
                                                 <ul class="reference-sources">
                                                     @foreach (var source in GetIndicatorSources(indicatorDefinition))
                                                     {
@@ -244,7 +244,7 @@
                                         }
                                         else if (_referenceRanges is null)
                                         {
-                                            <span class="indicator-reference-pending">Catálogo de referencia no disponible.</span>
+                                            <span class="indicator-reference-pending">Reference catalog unavailable.</span>
                                         }
                                     </article>
                                 }
@@ -255,12 +255,12 @@
 
                 @if (_referenceLoading)
                 {
-                    <p class="reference-source-note" role="status">Cargando catálogo de rangos…</p>
+                    <p class="reference-source-note" role="status">Loading reference ranges…</p>
                 }
                 else if (_referenceRangesFallback)
                 {
                     <p class="reference-source-note" role="status">
-                        El endpoint de rangos no está disponible; se muestra el catálogo compartido v@ReferenceRangesVersion.
+                        The ranges endpoint is unavailable; showing the shared catalog v@ReferenceRangesVersion.
                     </p>
                 }
 
@@ -269,27 +269,27 @@
                     <section class="history-section" aria-labelledby="history-title">
                         <header class="section-heading">
                             <div>
-                                <h2 id="history-title">Historial de chequeos</h2>
-                                <p>Filtra los registros por fecha y estado.</p>
+                                <h2 id="history-title">Checkup history</h2>
+                                <p>Filter records by date and status.</p>
                             </div>
                         </header>
 
                         <div class="history-filters">
                             <label>
-                                Desde
+                                From
                                 <input type="date" @bind="_historyFrom" />
                             </label>
                             <label>
-                                Hasta
+                                To
                                 <input type="date" @bind="_historyTo" />
                             </label>
                             <label>
-                                Estado
+                                Status
                                 <select @bind="_historyStatus">
                                     <option value="">Todos</option>
                                     <option value="normal">Normal</option>
-                                    <option value="watch">En observación</option>
-                                    <option value="critical">Crítico</option>
+                                    <option value="watch">Watch</option>
+                                    <option value="critical">Critical</option>
                                 </select>
                             </label>
                             <div class="history-filter-actions">
@@ -306,22 +306,22 @@
                         {
                             <div class="crew-member-state" role="status" aria-busy="true">
                                 <span class="session-spinner" aria-hidden="true"></span>
-                                <span>Cargando historial…</span>
+                                <span>Loading history…</span>
                             </div>
                         }
                         else if (_historyError is not null)
                         {
                             <div class="crew-member-state" role="alert">
-                                <h3>No se pudo cargar el historial</h3>
+                                <h3>Could not load history</h3>
                                 <p>@_historyError</p>
-                                <button class="crew-member-retry" type="button" @onclick="LoadHistoryAsync">Reintentar</button>
+                                <button class="crew-member-retry" type="button" @onclick="LoadHistoryAsync">Retry</button>
                             </div>
                         }
                         else if (_history is null || _history.Items.Count == 0)
                         {
                             <div class="crew-member-state history-empty">
-                                <h3>No hay chequeos para estos filtros</h3>
-                                <p>Prueba otro rango de fechas o estado.</p>
+                                <h3>No checkups match these filters</h3>
+                                <p>Try a different date range or status.</p>
                             </div>
                         }
                         else
@@ -330,18 +330,18 @@
                                 <table class="history-table">
                                     <thead>
                                         <tr>
-                                            <th scope="col">Fecha</th>
-                                            <th scope="col">Estado</th>
+                                            <th scope="col">Date</th>
+                                            <th scope="col">Status</th>
                                             <th scope="col">Indicadores</th>
-                                            <th scope="col"><span class="visually-hidden">Acción</span></th>
+                                            <th scope="col"><span class="visually-hidden">Action</span></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var checkUp in _history.Items)
                                         {
                                             <tr @key="checkUp.Id">
-                                                <td data-label="Fecha">@FormatTimestamp(checkUp.RecordedAt)</td>
-                                                <td data-label="Estado">
+                                                <td data-label="Date">@FormatTimestamp(checkUp.RecordedAt)</td>
+                                                <td data-label="Status">
                                                     <span class="health-chip health-chip--@StatusKey(checkUp.OverallStatus)">
                                                         @StatusLabel(checkUp.OverallStatus)
                                                     </span>
@@ -353,7 +353,7 @@
                                                         <button type="button"
                                                                 class="history-detail-button"
                                                                 @onclick="() => LoadCheckUpDetailAsync(checkUp.Id)">
-                                                            Ver detalle
+                                                            View details
                                                         </button>
                                                     }
                                                     else
@@ -367,20 +367,20 @@
                                 </table>
                             </div>
 
-                            <nav class="history-pagination" aria-label="Páginas del historial">
-                                <span>@_history.Total registros · Página @_historyPage de @HistoryPageCount</span>
+                            <nav class="history-pagination" aria-label="History pages">
+                                <span>@_history.Total registros · Page @_historyPage de @HistoryPageCount</span>
                                 <div>
                                     <button type="button"
                                             class="history-reset"
                                             disabled="@(_historyPage <= 1 || _historyLoading)"
                                             @onclick="PreviousHistoryPageAsync">
-                                        Anterior
+                                        Previous
                                     </button>
                                     <button type="button"
                                             class="history-reset"
                                             disabled="@(_historyPage >= HistoryPageCount || _historyLoading)"
                                             @onclick="NextHistoryPageAsync">
-                                        Siguiente
+                                        Next
                                     </button>
                                 </div>
                             </nav>
@@ -390,13 +390,13 @@
                         {
                             <div class="crew-member-state" role="status" aria-busy="true">
                                 <span class="session-spinner" aria-hidden="true"></span>
-                                <span>Cargando detalle del chequeo…</span>
+                                <span>Loading checkup details…</span>
                             </div>
                         }
                         else if (_checkUpDetailError is not null)
                         {
                             <div class="crew-member-state" role="alert">
-                                <h3>No se pudo cargar el detalle</h3>
+                                <h3>Could not load details</h3>
                                 <p>@_checkUpDetailError</p>
                             </div>
                         }
@@ -405,7 +405,7 @@
                             <article class="checkup-detail" aria-labelledby="checkup-detail-title">
                                 <header class="section-heading">
                                     <div>
-                                        <h2 id="checkup-detail-title">Detalle del chequeo</h2>
+                                        <h2 id="checkup-detail-title">Checkup details</h2>
                                         <p>@FormatTimestamp(_selectedCheckUp.RecordedAt)</p>
                                     </div>
                                     <span class="health-chip health-chip--@StatusKey(_selectedCheckUp.OverallStatus)">
@@ -443,7 +443,7 @@
                                             }
                                             @if (evaluation.Guidance.Count > 0)
                                             {
-                                                <strong>Guía</strong>
+                                                <strong>Guidance</strong>
                                                 <ul>
                                                     @foreach (var guidance in evaluation.Guidance)
                                                     {
@@ -459,7 +459,7 @@
                                             }
                                             @if (evaluation.Sources.Count > 0)
                                             {
-                                                <strong>Fuentes</strong>
+                                                <strong>Sources</strong>
                                                 <ul class="reference-sources">
                                                     @foreach (var source in evaluation.Sources)
                                                     {
@@ -480,8 +480,8 @@
     </ChildContent>
     <NotAuthorized>
         <div class="crew-member-state" role="alert">
-            <h1>Sin permiso para ver este perfil</h1>
-            <p>Tu cuenta no tiene el permiso necesario.</p>
+            <h1>You don’t have permission to view this profile</h1>
+            <p>Your account does not have the required permission.</p>
         </div>
     </NotAuthorized>
 </RequirePermission>
@@ -601,7 +601,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _profileError = "Comprueba la conexión e inténtalo de nuevo.";
+            _profileError = "Check your connection and try again.";
         }
         finally
         {
@@ -629,7 +629,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _statusError = "Comprueba la conexión e inténtalo de nuevo.";
+            _statusError = "Check your connection and try again.";
         }
         finally
         {
@@ -654,7 +654,7 @@
             if (_historyFrom.HasValue && _historyTo.HasValue &&
                 _historyFrom.Value.Date > _historyTo.Value.Date)
             {
-                _historyError = "La fecha inicial debe ser anterior a la fecha final.";
+                _historyError = "The start date must be before the end date.";
                 return;
             }
 
@@ -673,7 +673,7 @@
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
             _history = null;
-            _historyError = "Tu cuenta ya no tiene el permiso para consultar el historial.";
+            _historyError = "Your account no longer has permission to view history.";
         }
         catch (Exception exception) when (
             exception is HttpRequestException or
@@ -682,7 +682,7 @@
                 TaskCanceledException)
         {
             _history = null;
-            _historyError = "Comprueba la conexión e inténtalo de nuevo.";
+            _historyError = "Check your connection and try again.";
         }
         finally
         {
@@ -740,11 +740,11 @@
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
-            _checkUpDetailError = "Tu cuenta no tiene el permiso vitals.view para abrir el detalle.";
+            _checkUpDetailError = "Your account does not have vitals.view permission to open details.";
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
-            _checkUpDetailError = "El chequeo ya no está disponible.";
+            _checkUpDetailError = "This checkup is no longer available.";
         }
         catch (Exception exception) when (
             exception is HttpRequestException or
@@ -752,7 +752,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _checkUpDetailError = "Comprueba la conexión e inténtalo de nuevo.";
+            _checkUpDetailError = "Check your connection and try again.";
         }
         finally
         {
@@ -898,12 +898,12 @@
     private static string IndicatorName(IndicatorType indicator, JsonElement? definition) =>
         indicator switch
         {
-            IndicatorType.BloodPressure => "Presión arterial",
-            IndicatorType.HeartRate => "Frecuencia cardíaca",
-            IndicatorType.BloodSugar => "Glucosa en sangre",
-            IndicatorType.BodyTemperature => "Temperatura corporal",
-            IndicatorType.Sleep => "Sueño",
-            IndicatorType.Mood => "Estado de ánimo",
+            IndicatorType.BloodPressure => "Blood pressure",
+            IndicatorType.HeartRate => "Heart rate",
+        IndicatorType.BloodSugar => "Blood glucose",
+        IndicatorType.BodyTemperature => "Body temperature",
+            IndicatorType.Sleep => "Sleep",
+            IndicatorType.Mood => "Mood",
             _ => GetJsonString(definition, "name") ?? indicator.ToString()
         };
 
@@ -926,9 +926,9 @@
     private static string StatusLabel(HealthStatus? status) => status switch
     {
         HealthStatus.Normal => "Normal",
-        HealthStatus.Watch => "En observación",
-        HealthStatus.Critical => "Crítico",
-        _ => "Sin datos"
+        HealthStatus.Watch => "Watch",
+        HealthStatus.Critical => "Critical",
+        _ => "No data"
     };
 
     private static string Initial(string displayName) =>

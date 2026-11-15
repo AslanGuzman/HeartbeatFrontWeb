@@ -5,34 +5,34 @@
 @inject MissionControlSession Session
 @inject AlertCounterState AlertCounter
 
-<PageTitle>Heartbeat | Alertas</PageTitle>
+<PageTitle>Heartbeat | Alerts</PageTitle>
 
 <RequirePermission Permission="@Permissions.AlertsView">
     <ChildContent>
         <section class="alerts-page" aria-labelledby="alerts-title">
             <header class="alerts-heading">
                 <div>
-                    <h1 id="alerts-title">Centro de alertas</h1>
-                    <p>Resultados críticos reportados por la tripulación.</p>
+                    <h1 id="alerts-title">Alert center</h1>
+                    <p>Critical readings reported by the crew.</p>
                 </div>
                 @if (_alerts is not null && !_loading)
                 {
-                    <span class="alerts-total">@_alerts.Total alertas</span>
+                    <span class="alerts-total">@_alerts.Total alerts</span>
                 }
             </header>
 
-            <nav class="alerts-tabs" aria-label="Filtrar alertas">
+            <nav class="alerts-tabs" aria-label="Filter alerts">
                 <button type="button"
                         class="@TabClass("all")"
                         aria-pressed="@(_state == "all")"
                         @onclick="ShowAllAsync">
-                    Todas
+                    All
                 </button>
                 <button type="button"
                         class="@TabClass("open")"
                         aria-pressed="@(_state == "open")"
                         @onclick="ShowOpenAsync">
-                    Abiertas
+                    Open
                 </button>
                 <button type="button"
                         class="@TabClass("acknowledged")"
@@ -46,22 +46,22 @@
             {
                 <div class="alerts-state" role="status" aria-busy="true">
                     <span class="session-spinner" aria-hidden="true"></span>
-                    <span>Cargando alertas…</span>
+                    <span>Loading alerts…</span>
                 </div>
             }
             else if (_forbidden)
             {
                 <div class="alerts-state" role="alert">
-                    <h2>Sin permiso para ver las alertas</h2>
-                    <p>Tu cuenta no tiene el permiso necesario.</p>
+                    <h2>You don’t have permission to view alerts</h2>
+                    <p>Your account does not have the required permission.</p>
                 </div>
             }
             else if (_loadError is not null)
             {
                 <div class="alerts-state" role="alert">
-                    <h2>No se pudieron cargar las alertas</h2>
+                    <h2>Could not load alerts</h2>
                     <p>@_loadError</p>
-                    <button class="alerts-button" type="button" @onclick="LoadAlertsAsync">Reintentar</button>
+                    <button class="alerts-button" type="button" @onclick="LoadAlertsAsync">Retry</button>
                 </div>
             }
             else if (_alerts is null || _alerts.Items.Count == 0)
@@ -84,12 +84,12 @@
                                     <h2>@IndicatorSummary(alert.Indicators)</h2>
                                     <p class="alert-astronaut">@alert.AstronautName</p>
                                 </div>
-                                <span class="alert-severity">Crítica</span>
+                                <span class="alert-severity">Critical</span>
                             </header>
 
                             <dl class="alert-details">
                                 <div>
-                                    <dt>Fecha de alerta</dt>
+                                    <dt>Alert date</dt>
                                     <dd>@FormatTimestamp(alert.CreatedAt)</dd>
                                 </div>
                                 <div>
@@ -106,7 +106,7 @@
                             @if (acknowledged)
                             {
                                 <div class="alert-acknowledgement">
-                                    <strong>Reconocida por @(alert.AcknowledgedBy ?? "Usuario no disponible")</strong>
+                                    <strong>Reconocida por @(alert.AcknowledgedBy ?? "Username no disponible")</strong>
                                     <span>@FormatTimestamp(alert.AcknowledgedAt!.Value)</span>
                                     @if (!string.IsNullOrWhiteSpace(alert.AcknowledgeNote))
                                     {
@@ -127,7 +127,7 @@
                                                   maxlength="500"
                                                   required
                                                   rows="3"></textarea>
-                                        <span class="acknowledge-hint">Obligatoria, hasta 500 caracteres.</span>
+                                        <span class="acknowledge-hint">Required, up to 500 characters.</span>
                                         @if (_acknowledgeError is not null)
                                         {
                                             <p class="acknowledge-error" role="alert">@_acknowledgeError</p>
@@ -136,13 +136,13 @@
                                             <button class="alerts-button"
                                                     type="submit"
                                                     disabled="@(_savingAcknowledgement || string.IsNullOrWhiteSpace(_acknowledgeNote))">
-                                                @(_savingAcknowledgement ? "Guardando…" : "Confirmar reconocimiento")
+                                                @(_savingAcknowledgement ? "Saving…" : "Confirmar reconocimiento")
                                             </button>
                                             <button class="alerts-button alerts-button--secondary"
                                                     type="button"
                                                     disabled="@_savingAcknowledgement"
                                                     @onclick="CancelAcknowledge">
-                                                Cancelar
+                                                Cancel
                                             </button>
                                         </div>
                                     </form>
@@ -152,7 +152,7 @@
                                     <button class="alerts-action"
                                             type="button"
                                             @onclick="() => BeginAcknowledge(alert.Id)">
-                                        Reconocer alerta
+                                        Acknowledge alert
                                     </button>
                                 }
                             }
@@ -160,20 +160,20 @@
                     }
                 </div>
 
-                <nav class="alerts-pagination" aria-label="Páginas de alertas">
-                    <span>Página @_page de @PageCount</span>
+                <nav class="alerts-pagination" aria-label="Alert pages">
+                    <span>Page @_page de @PageCount</span>
                     <div>
                         <button class="alerts-button alerts-button--secondary"
                                 type="button"
                                 disabled="@(_page <= 1 || _loading)"
                                 @onclick="PreviousPageAsync">
-                            Anterior
+                            Previous
                         </button>
                         <button class="alerts-button alerts-button--secondary"
                                 type="button"
                                 disabled="@(_page >= PageCount || _loading)"
                                 @onclick="NextPageAsync">
-                            Siguiente
+                            Next
                         </button>
                     </div>
                 </nav>
@@ -182,8 +182,8 @@
     </ChildContent>
     <NotAuthorized>
         <section class="alerts-state" role="alert">
-            <h1>Sin permiso para ver las alertas</h1>
-            <p>Tu cuenta no tiene el permiso necesario.</p>
+            <h1>You don’t have permission to view alerts</h1>
+            <p>Your account does not have the required permission.</p>
         </section>
     </NotAuthorized>
 </RequirePermission>
@@ -206,14 +206,14 @@
 
     private string EmptyTitle => _state switch
     {
-        "open" => "No hay alertas abiertas",
-        "acknowledged" => "No hay alertas reconocidas",
-        _ => "No hay alertas registradas"
+        "open" => "No open alerts",
+        "acknowledged" => "No acknowledged alerts",
+        _ => "No alerts found"
     };
 
     private string EmptyMessage => _state == "open"
-        ? "Las alertas abiertas de la tripulación aparecerán aquí."
-        : "Prueba otro filtro para consultar las alertas.";
+        ? "Open crew alerts will appear here."
+        : "Try another filter to find alerts.";
 
     protected override async Task OnInitializedAsync()
     {
@@ -253,7 +253,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _loadError = "Comprueba la conexión e inténtalo de nuevo.";
+            _loadError = "Check your connection and try again.";
         }
         finally
         {
@@ -317,7 +317,7 @@
         var note = _acknowledgeNote.Trim();
         if (note.Length is 0 or > 500)
         {
-            _acknowledgeError = "Escribe una nota de hasta 500 caracteres.";
+            _acknowledgeError = "Enter a note of up to 500 characters.";
             return;
         }
 
@@ -333,15 +333,15 @@
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
-            _acknowledgeError = "Tu cuenta no tiene permiso para reconocer alertas.";
+            _acknowledgeError = "Your account does not have permission to acknowledge alerts.";
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
         {
-            _acknowledgeError = "La alerta ya no está disponible. Actualiza la lista.";
+            _acknowledgeError = "This alert is no longer available. Refresh the list.";
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
         {
-            _acknowledgeError = "La alerta ya fue reconocida. Actualiza la lista.";
+            _acknowledgeError = "This alert has already been acknowledged. Refresh the list.";
             await LoadAlertsAsync();
             await AlertCounter.RefreshAsync();
         }
@@ -351,7 +351,7 @@
                 InvalidDataException or
                 TaskCanceledException)
         {
-            _acknowledgeError = "No se pudo guardar el reconocimiento. Comprueba la conexión e inténtalo de nuevo.";
+            _acknowledgeError = "Could not save the acknowledgement. Check your connection and try again.";
         }
         finally
         {
@@ -367,12 +367,12 @@
 
     private static string IndicatorName(IndicatorType indicator) => indicator switch
     {
-        IndicatorType.BloodPressure => "Presión arterial",
-        IndicatorType.HeartRate => "Frecuencia cardíaca",
-        IndicatorType.BloodSugar => "Glucosa en sangre",
-        IndicatorType.BodyTemperature => "Temperatura corporal",
-        IndicatorType.Sleep => "Sueño",
-        IndicatorType.Mood => "Estado de ánimo",
+        IndicatorType.BloodPressure => "Blood pressure",
+        IndicatorType.HeartRate => "Heart rate",
+        IndicatorType.BloodSugar => "Blood glucose",
+        IndicatorType.BodyTemperature => "Body temperature",
+        IndicatorType.Sleep => "Sleep",
+        IndicatorType.Mood => "Mood",
         _ => indicator.ToString()
     };
 
