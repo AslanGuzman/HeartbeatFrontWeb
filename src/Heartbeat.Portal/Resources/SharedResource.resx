@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Language" xml:space="preserve"><value>Language</value></data>
+  <data name="Mission Control" xml:space="preserve"><value>Mission Control</value></data>
+  <data name="Simulated data" xml:space="preserve"><value>Simulated data</value></data>
+  <data name="Sign out" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Main navigation" xml:space="preserve"><value>Main navigation</value></data>
+  <data name="Mission" xml:space="preserve"><value>Mission</value></data>
+  <data name="Phantoms" xml:space="preserve"><value>Phantoms</value></data>
+  <data name="Crew" xml:space="preserve"><value>Crew</value></data>
+  <data name="Trends" xml:space="preserve"><value>Trends</value></data>
+  <data name="Live heart rate" xml:space="preserve"><value>Live heart rate</value></data>
+  <data name="Health summary" xml:space="preserve"><value>Health summary</value></data>
+  <data name="Alerts" xml:space="preserve"><value>Alerts</value></data>
+  <data name="Messages" xml:space="preserve"><value>Messages</value></data>
+  <data name="Users" xml:space="preserve"><value>Users</value></data>
+  <data name="Roles &amp; permissions" xml:space="preserve"><value>Roles &amp; permissions</value></data>
+  <data name="open alerts" xml:space="preserve"><value>open alerts</value></data>
+  <data name="An unexpected error occurred." xml:space="preserve"><value>An unexpected error occurred.</value></data>
+  <data name="Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Checking session…" xml:space="preserve"><value>Checking session…</value></data>
+  <data name="You are viewing the active crew." xml:space="preserve"><value>You are viewing the active crew.</value></data>
+  <data name="Sign in" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Your health, even off the grid." xml:space="preserve"><value>Your health, even off the grid.</value></data>
+  <data name="Animated simulated heart rate signal" xml:space="preserve"><value>Animated simulated heart rate signal</value></data>
+  <data name="Your mission matters." xml:space="preserve"><value>Your mission matters.</value></data>
+  <data name="Track your vital signs, record your checkups, and take care of your health throughout your space mission." xml:space="preserve"><value>Track your vital signs, record your checkups, and take care of your health throughout your space mission.</value></data>
+  <data name="Welcome back" xml:space="preserve"><value>Welcome back</value></data>
+  <data name="Sign in to your Heartbeat account." xml:space="preserve"><value>Sign in to your Heartbeat account.</value></data>
+  <data name="Your session expired. Sign in to continue." xml:space="preserve"><value>Your session expired. Sign in to continue.</value></data>
+  <data name="Could not connect to Mission Control. Please try again." xml:space="preserve"><value>Could not connect to Mission Control. Please try again.</value></data>
+  <data name="USERNAME" xml:space="preserve"><value>USERNAME</value></data>
+  <data name="Username field" xml:space="preserve"><value>Username</value></data>
+  <data name="PASSWORD" xml:space="preserve"><value>PASSWORD</value></data>
+  <data name="Password field" xml:space="preserve"><value>Password</value></data>
+  <data name="Signing in…" xml:space="preserve"><value>Signing in…</value></data>
+  <data name="Demo access" xml:space="preserve"><value>Demo access</value></data>
+  <data name="Use an active Mission Control account." xml:space="preserve"><value>Use an active Mission Control account.</value></data>
+  <data name="Demo accounts and credentials depend on the development environment." xml:space="preserve"><value>Demo accounts and credentials depend on the development environment.</value></data>
+  <data name="Crew accounts sign in through their own app." xml:space="preserve"><value>Crew accounts sign in through their own app.</value></data>
+  <data name="Could not verify your session. Please try again." xml:space="preserve"><value>Could not verify your session. Please try again.</value></data>
+  <data name="The username or password is incorrect." xml:space="preserve"><value>The username or password is incorrect.</value></data>
+  <data name="This account is inactive or no longer has access." xml:space="preserve"><value>This account is inactive or no longer has access.</value></data>
+  <data name="Your account does not have permission to access the portal." xml:space="preserve"><value>Your account does not have permission to access the portal.</value></data>
+  <data name="Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Watch" xml:space="preserve"><value>Watch</value></data>
+  <data name="Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="No readings" xml:space="preserve"><value>No readings</value></data>
+  <data name="No data" xml:space="preserve"><value>No data</value></data>
+</root>

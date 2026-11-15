@@ -1,45 +1,46 @@
 @implements IDisposable
 @inject MissionControlSession Session
 @inject AlertCounterState AlertCounter
+@inject IStringLocalizer<SharedResource> T
 
-<nav class="primary-navigation" aria-label="Main navigation">
+<nav class="primary-navigation" aria-label="@T["Main navigation"]">
     <ul>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
-                <NavLink href="/mission" Match="NavLinkMatch.Prefix">Misión</NavLink>
+                <NavLink href="/mission" Match="NavLinkMatch.Prefix">@T["Mission"]</NavLink>
             </RequirePermission>
         </li>
         <li>
-            <NavLink href="/phantoms" Match="NavLinkMatch.Prefix">Phantoms</NavLink>
+            <NavLink href="/phantoms" Match="NavLinkMatch.Prefix">@T["Phantoms"]</NavLink>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
-                <NavLink href="/crew" Match="NavLinkMatch.Prefix">Crew</NavLink>
+                <NavLink href="/crew" Match="NavLinkMatch.Prefix">@T["Crew"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.VitalsHistory">
-                <NavLink href="/charts" Match="NavLinkMatch.Prefix">Trends</NavLink>
+                <NavLink href="/charts" Match="NavLinkMatch.Prefix">@T["Trends"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
-                <NavLink href="/fc-en-vivo" Match="NavLinkMatch.Prefix">FC en vivo</NavLink>
+                <NavLink href="/fc-en-vivo" Match="NavLinkMatch.Prefix">@T["Live heart rate"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.CrewView">
-                <NavLink href="/salud" Match="NavLinkMatch.Prefix">Resumen de salud</NavLink>
+                <NavLink href="/salud" Match="NavLinkMatch.Prefix">@T["Health summary"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.AlertsView">
                 <NavLink href="/alerts" Match="NavLinkMatch.Prefix">
-                    <span>Alerts</span>
+                    <span>@T["Alerts"]</span>
                     @if (AlertCounter.OpenCount is > 0)
                     {
                         <span class="nav-alert-count"
-                              aria-label="@($"{AlertCounter.OpenCount} open alerts")">
+                              aria-label="@($"{AlertCounter.OpenCount} {T["open alerts"]}")">
                             @AlertCounter.OpenCount
                         </span>
                     }
@@ -48,17 +49,17 @@
         </li>
         <li>
             <RequirePermission Permission="@Permissions.MessagesView">
-                <NavLink href="/messages" Match="NavLinkMatch.Prefix">Messages</NavLink>
+                <NavLink href="/messages" Match="NavLinkMatch.Prefix">@T["Messages"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.UsersView">
-                <NavLink href="/users" Match="NavLinkMatch.Prefix">Users</NavLink>
+                <NavLink href="/users" Match="NavLinkMatch.Prefix">@T["Users"]</NavLink>
             </RequirePermission>
         </li>
         <li>
             <RequirePermission Permission="@Permissions.RolesManage">
-                <NavLink href="/roles" Match="NavLinkMatch.Prefix">Roles & permissions</NavLink>
+                <NavLink href="/roles" Match="NavLinkMatch.Prefix">@T["Roles & permissions"]</NavLink>
             </RequirePermission>
         </li>
     </ul>
