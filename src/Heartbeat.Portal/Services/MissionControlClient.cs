@@ -263,15 +263,11 @@ public sealed class MissionControlClient(
         response.EnsureSuccessStatusCode();
     }
 
-    public Task<Paged<RoleDto>> GetRolesAsync(
-        int page = 1,
-        int pageSize = 50,
-        CancellationToken cancellationToken = default)
-    {
-        var uri = $"roles?page={page.ToString(CultureInfo.InvariantCulture)}" +
-                  $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
-        return GetAsync<Paged<RoleDto>>(uri, cancellationToken);
-    }
+    public Task<List<RoleDto>> GetRolesAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<RoleDto>>("roles", cancellationToken);
+
+    public Task<List<PermissionDto>> GetPermissionsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<PermissionDto>>("permissions", cancellationToken);
 
     public async Task<RoleDto> CreateRoleAsync(
         string name,
@@ -292,6 +288,39 @@ public sealed class MissionControlClient(
             MissionControlJsonOptions,
             cancellationToken) ?? throw new InvalidDataException(
                 "The Mission Control API returned an empty response.");
+    }
+
+    public async Task<RoleDto> UpdateRoleAsync(
+        Guid id,
+        string name,
+        IReadOnlyList<string> permissions,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new SaveRoleRequest(name, permissions);
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"roles/{id:D}")
+        {
+            Content = JsonContent.Create(request, options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<RoleDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
+    public async Task DeleteRoleAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Delete,
+            $"roles/{id:D}");
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        response.EnsureSuccessStatusCode();
     }
 
     private async Task<T> GetAsync<T>(string uri, CancellationToken cancellationToken)
