@@ -370,6 +370,99 @@ public sealed class MissionControlClientTests
         Assert.AreEqual("/api/mc/v1/alerts?state=open&page=1&pageSize=1", requestedUri);
     }
 
+    [TestMethod]
+    public async Task SetUserRoleSendsTheContractRequestAndReadsTheUpdatedUser()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var userId = Guid.NewGuid();
+        var roleId = Guid.NewGuid();
+        var requests = new List<(string Method, string Path, string? Body)>();
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            requests.Add((
+                request.Method.Method,
+                request.RequestUri!.AbsolutePath,
+                request.Content is null
+                    ? null
+                    : await request.Content.ReadAsStringAsync(cancellationToken)));
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new
+                {
+                    id = userId,
+                    userName = "a.rivera",
+                    email = "ana@heartbeat.test",
+                    displayName = "Ana Rivera",
+                    role = new
+                    {
+                        id = roleId,
+                        name = "Flight Surgeon",
+                        isSystem = false,
+                        userCount = 1,
+                        permissions = new[] { Permissions.VitalsView }
+                    },
+                    isActive = true,
+                    permissions = new[] { Permissions.VitalsView }
+                })
+            };
+        }))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var user = await client.SetUserRoleAsync(userId, roleId);
+
+        Assert.AreEqual(roleId, user.Role.Id);
+        Assert.HasCount(1, requests);
+        Assert.AreEqual("PUT", requests[0].Method);
+        Assert.AreEqual($"/api/mc/v1/users/{userId:D}/role", requests[0].Path);
+        using var body = JsonDocument.Parse(requests[0].Body!);
+        Assert.AreEqual(roleId, body.RootElement.GetProperty("roleId").GetGuid());
+    }
+
+    [TestMethod]
+    public async Task ApiValidationErrorsAreExposedInTheExceptionMessage()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        using var httpClient = new HttpClient(new StubHttpMessageHandler((_, _) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+            {
+                Content = new StringContent(
+                    """{"title":"One or more validation errors occurred.","errors":{"email":["A valid email address is required."]}}""",
+                    System.Text.Encoding.UTF8,
+                    "application/problem+json")
+            })))
+        {
+            BaseAddress = new Uri("https://mission-control.test/api/mc/v1/")
+        };
+
+        var session = new MissionControlSession();
+        session.SetTokens("access-token", now.AddHours(1), "refresh-token", now.AddHours(8));
+        var refresher = new MissionControlTokenRefresher(httpClient, session, new StubSessionStore());
+        var client = new MissionControlClient(httpClient, refresher);
+
+        var exception = await Assert.ThrowsExactlyAsync<HttpRequestException>(() =>
+            client.CreateUserAsync(new CreateUserRequest(
+                "a.rivera",
+                "not-an-email",
+                "Ana Rivera",
+                "Password1!",
+                Guid.NewGuid())));
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, exception.StatusCode);
+        Assert.IsTrue(
+            exception.Message.Contains("A valid email address is required.", StringComparison.Ordinal),
+            exception.Message);
+    }
+
     private sealed class StubSessionStore : IMissionControlSessionStore
     {
         public Task RestoreAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
