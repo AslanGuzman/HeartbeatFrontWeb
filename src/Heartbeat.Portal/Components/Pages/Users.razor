@@ -4,7 +4,6 @@
 @using Heartbeat.Shared
 @inject MissionControlClient Client
 @inject MissionControlSession Session
-@inject AlertCounterState AlertCounter
 
 <PageTitle>Heartbeat | Administración de usuarios</PageTitle>
 
@@ -17,11 +16,11 @@
                     <p>Gestión de cuentas y roles.</p>
                 </div>
                 <div>
-                    @if (Session.HasPermission(Permissions.RolesManage))
+                    @if (Session.HasPermission(Permissions.UsersManage))
                     {
                         <button class="users-button users-button--primary"
                                 type="button"
-                                @onclick="OpenCreateRoleModal">Crear rol</button>
+                                @onclick="OpenCreateUserModal">Crear usuario</button>
                     }
                 </div>
             </header>
@@ -67,7 +66,7 @@
                                     <h2>@user.DisplayName</h2>
                                     <p class="user-username">@user.UserName</p>
                                 </div>
-                                <span class="user-status @(user.IsActive ? "status-active" : "status-inactive")">
+                                <span class="user-status @(user.IsActive ? "user-status--active" : "user-status--inactive")">
                                     @(user.IsActive ? "Activo" : "Inactivo")
                                 </span>
                             </header>
@@ -97,16 +96,14 @@
                                 {
                                     <button class="users-action users-action--small"
                                             type="button"
-                                            @onclick="() => OpenUpdateModal(user.Id)">Editar</button>
-                                    <button class="users-action users-action--small users-action--danger"
-                                            type="button"
-                                            @onclick="async () => await ToggleUserStatusAsync(user.Id)">@(user.IsActive ? "Desactivar" : "Activar")</button>
-                                }
-                                @if (Session.HasPermission(Permissions.RolesManage) && user.Role.IsSystem == false)
-                                {
+                                            @onclick="() => OpenUpdateModal(user)">Editar</button>
                                     <button class="users-action users-action--small"
                                             type="button"
-                                            @onclick="() => OpenSetRoleModal(user.Id)">Cambiar rol</button>
+                                            @onclick="() => OpenSetRoleModal(user)">Cambiar rol</button>
+                                    <button class="users-action users-action--small users-action--danger"
+                                            type="button"
+                                            disabled="@(_toggleUserId == user.Id)"
+                                            @onclick="() => ToggleUserStatusAsync(user)">@(user.IsActive ? "Desactivar" : "Activar")</button>
                                 }
                             </div>
                         </article>
@@ -128,15 +125,167 @@
                 </nav>
             }
 
+            @if (_actionError is not null)
+            {
+                <p class="users-error" role="alert">@_actionError</p>
+            }
+
             @if (_showCreateUserModal || _showUpdateModal || _showSetRoleModal)
             {
-                <div class="users-overlay"
-                     @onclick="CloseModals"
-                 @ondblclick="CloseModals">
-                    <div class="users-modal">
-                        @if (_showCreateUserModal) { <CreateUserForm /> }
-                        else if (_showUpdateModal) { <UpdateUserForm /> }
-                        else if (_showSetRoleModal) { <SetRoleForm /> }
+                <div class="users-overlay" @onclick="CloseModals">
+                    <div class="users-modal"
+                         role="dialog"
+                         aria-modal="true"
+                         aria-labelledby="users-modal-title"
+                         @onclick:stopPropagation="true">
+                        @if (_showCreateUserModal)
+                        {
+                            <form class="users-form" @onsubmit="CreateUserAsync" @onsubmit:preventDefault>
+                                <h2 id="users-modal-title">Nuevo usuario</h2>
+
+                                <label>
+                                    <span>Nombre de usuario</span>
+                                    <input @bind="_newUserName"
+                                           maxlength="50"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+                                <label>
+                                    <span>Correo</span>
+                                    <input type="email"
+                                           @bind="_newEmail"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+                                <label>
+                                    <span>Nombre visible</span>
+                                    <input @bind="_newDisplayName"
+                                           maxlength="100"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+                                <label>
+                                    <span>Contraseña</span>
+                                    <input type="password"
+                                           @bind="_newPassword"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+                                <label>
+                                    <span>Rol</span>
+                                    <select @bind="_newRoleId"
+                                            required
+                                            disabled="@(_saving || _roles.Count == 0)">
+                                        <option value="@Guid.Empty">Selecciona un rol</option>
+                                        @foreach (var role in _roles)
+                                        {
+                                            <option value="@role.Id">@role.Name</option>
+                                        }
+                                    </select>
+                                </label>
+
+                                @if (_rolesError is not null)
+                                {
+                                    <p class="users-error" role="alert">@_rolesError</p>
+                                }
+                                @if (_modalError is not null)
+                                {
+                                    <p class="users-error" role="alert">@_modalError</p>
+                                }
+
+                                <div class="users-form-actions">
+                                    <button class="users-button users-button--primary"
+                                            type="submit"
+                                            disabled="@(_saving || _roles.Count == 0)">
+                                        @(_saving ? "Guardando…" : "Crear usuario")
+                                    </button>
+                                    <button class="users-button"
+                                            type="button"
+                                            disabled="@_saving"
+                                            @onclick="CloseModals">Cancelar</button>
+                                </div>
+                            </form>
+                        }
+                        else if (_showUpdateModal)
+                        {
+                            <form class="users-form" @onsubmit="UpdateUserAsync" @onsubmit:preventDefault>
+                                <h2 id="users-modal-title">Editar usuario</h2>
+                                <p class="users-form-note">@_updateUserName</p>
+
+                                <label>
+                                    <span>Correo</span>
+                                    <input type="email"
+                                           @bind="_updateEmail"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+                                <label>
+                                    <span>Nombre visible</span>
+                                    <input @bind="_updateDisplayName"
+                                           maxlength="100"
+                                           required
+                                           disabled="@_saving" />
+                                </label>
+
+                                @if (_modalError is not null)
+                                {
+                                    <p class="users-error" role="alert">@_modalError</p>
+                                }
+
+                                <div class="users-form-actions">
+                                    <button class="users-button users-button--primary"
+                                            type="submit"
+                                            disabled="@_saving">
+                                        @(_saving ? "Guardando…" : "Guardar cambios")
+                                    </button>
+                                    <button class="users-button"
+                                            type="button"
+                                            disabled="@_saving"
+                                            @onclick="CloseModals">Cancelar</button>
+                                </div>
+                            </form>
+                        }
+                        else
+                        {
+                            <form class="users-form" @onsubmit="SetUserRoleAsync" @onsubmit:preventDefault>
+                                <h2 id="users-modal-title">Cambiar rol</h2>
+                                <p class="users-form-note">@_roleUserName</p>
+
+                                <label>
+                                    <span>Rol</span>
+                                    <select @bind="_selectedRoleId"
+                                            required
+                                            disabled="@(_saving || _roles.Count == 0)">
+                                        <option value="@Guid.Empty">Selecciona un rol</option>
+                                        @foreach (var role in _roles)
+                                        {
+                                            <option value="@role.Id">@role.Name</option>
+                                        }
+                                    </select>
+                                </label>
+
+                                @if (_rolesError is not null)
+                                {
+                                    <p class="users-error" role="alert">@_rolesError</p>
+                                }
+                                @if (_modalError is not null)
+                                {
+                                    <p class="users-error" role="alert">@_modalError</p>
+                                }
+
+                                <div class="users-form-actions">
+                                    <button class="users-button users-button--primary"
+                                            type="submit"
+                                            disabled="@(_saving || _roles.Count == 0)">
+                                        @(_saving ? "Guardando…" : "Cambiar rol")
+                                    </button>
+                                    <button class="users-button"
+                                            type="button"
+                                            disabled="@_saving"
+                                            @onclick="CloseModals">Cancelar</button>
+                                </div>
+                            </form>
+                        }
                     </div>
                 </div>
             }
@@ -163,9 +312,13 @@
     private string _updateUserName = string.Empty;
     private string _updateEmail = string.Empty;
     private string _updateDisplayName = string.Empty;
-    private Guid _updateRoleId;
-    private string _newRoleName = string.Empty;
-    private IReadOnlyList<string> _newRolePermissions = new List<string>();
+    private Guid _selectedRoleId;
+    private string _roleUserName = string.Empty;
+    private List<RoleDto> _roles = [];
+    private string? _rolesError;
+    private string? _modalError;
+    private string? _actionError;
+    private bool _saving;
     private Guid? _toggleUserId;
 
     private int PageCount =>
@@ -181,6 +334,28 @@
         {
             _loading = false;
         }
+
+        if (Session.HasPermission(Permissions.UsersManage))
+        {
+            await LoadRolesAsync();
+        }
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        try
+        {
+            _roles = await Client.GetRolesAsync();
+            _rolesError = null;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _rolesError = "No se pudieron cargar los roles. Vuelve a abrir el formulario para reintentar.";
+        }
     }
 
     private async Task LoadUsersAsync()
@@ -191,7 +366,7 @@
 
         try
         {
-            _users = await Client.GetUsersAsync("all", _page, PageSize);
+            _users = await Client.GetUsersAsync(_page, PageSize);
         }
         catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
         {
@@ -211,8 +386,6 @@
         }
     }
 
-    private Task ShowAllUsersAsync() => ChangePage(1);
-    private Task ShowOpenUsersAsync() => ChangePage(1);
     private Task ChangePage(int page)
     {
         _page = page;
@@ -222,21 +395,22 @@
     private Task PreviousPageAsync() => ChangePage(_page - 1);
     private Task NextPageAsync() => ChangePage(_page + 1);
 
-    private void OpenCreateRoleModal()
+    private async Task OpenCreateUserModal()
     {
-        _showSetRoleModal = true;
-        _newRoleName = string.Empty;
-        _newRolePermissions = new List<string>();
-    }
+        if (_roles.Count == 0 && _rolesError is not null)
+        {
+            await LoadRolesAsync();
+        }
 
-    private void OpenCreateUserModal()
-    {
         _showCreateUserModal = true;
+        _showUpdateModal = false;
+        _showSetRoleModal = false;
         _newUserName = string.Empty;
         _newEmail = string.Empty;
         _newDisplayName = string.Empty;
         _newPassword = string.Empty;
         _newRoleId = Guid.Empty;
+        _modalError = null;
     }
 
     private void CloseModals()
@@ -245,24 +419,35 @@
         _showUpdateModal = false;
         _showSetRoleModal = false;
         _editingUserId = null;
+        _modalError = null;
     }
 
-    private void OpenUpdateModal(Guid userId)
+    private void OpenUpdateModal(PortalUserDto user)
     {
-        _editingUserId = userId;
+        _editingUserId = user.Id;
+        _showCreateUserModal = false;
         _showUpdateModal = true;
-        _updateUserName = string.Empty;
-        _updateEmail = string.Empty;
-        _updateDisplayName = string.Empty;
-        _updateRoleId = Guid.Empty;
+        _showSetRoleModal = false;
+        _updateUserName = user.UserName;
+        _updateEmail = user.Email;
+        _updateDisplayName = user.DisplayName;
+        _modalError = null;
     }
 
-    private void OpenSetRoleModal(Guid userId)
+    private async Task OpenSetRoleModal(PortalUserDto user)
     {
-        _editingUserId = userId;
+        if (_roles.Count == 0 && _rolesError is not null)
+        {
+            await LoadRolesAsync();
+        }
+
+        _editingUserId = user.Id;
+        _showCreateUserModal = false;
+        _showUpdateModal = false;
         _showSetRoleModal = true;
-        _newRoleName = string.Empty;
-        _newRolePermissions = new List<string>();
+        _roleUserName = $"{user.DisplayName} ({user.UserName})";
+        _selectedRoleId = user.Role.Id;
+        _modalError = null;
     }
 
     private async Task CreateUserAsync()
@@ -272,94 +457,162 @@
             string.IsNullOrWhiteSpace(_newDisplayName) ||
             string.IsNullOrWhiteSpace(_newPassword))
         {
+            _modalError = "Completa todos los campos.";
             return;
         }
 
-        _showCreateUserModal = false;
+        if (_newRoleId == Guid.Empty)
+        {
+            _modalError = "Selecciona un rol.";
+            return;
+        }
+
+        _saving = true;
+        _modalError = null;
+
         try
         {
             await Client.CreateUserAsync(new CreateUserRequest(
-                _newUserName,
-                _newEmail,
-                _newDisplayName,
+                _newUserName.Trim(),
+                _newEmail.Trim(),
+                _newDisplayName.Trim(),
                 _newPassword,
                 _newRoleId));
+            CloseModals();
             await LoadUsersAsync();
+        }
+        catch (HttpRequestException exception)
+        {
+            _modalError = FriendlyError(exception);
         }
         catch (Exception)
         {
-            // Show error - would need an error state
+            _modalError = "No se pudo crear el usuario. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 
     private async Task UpdateUserAsync()
     {
-        if (_editingUserId is null) return;
-        if (string.IsNullOrWhiteSpace(_updateUserName) ||
-            string.IsNullOrWhiteSpace(_updateEmail) ||
-            string.IsNullOrWhiteSpace(_updateDisplayName))
+        if (_editingUserId is null)
         {
             return;
         }
 
-        _showUpdateModal = false;
+        if (string.IsNullOrWhiteSpace(_updateEmail) ||
+            string.IsNullOrWhiteSpace(_updateDisplayName))
+        {
+            _modalError = "Completa el correo y el nombre visible.";
+            return;
+        }
+
+        _saving = true;
+        _modalError = null;
+
         try
         {
             await Client.UpdateUserAsync(_editingUserId.Value, new UpdateUserRequest(
-                _updateEmail,
-                _updateDisplayName));
+                _updateEmail.Trim(),
+                _updateDisplayName.Trim()));
+            CloseModals();
             await LoadUsersAsync();
+        }
+        catch (HttpRequestException exception)
+        {
+            _modalError = FriendlyError(exception);
         }
         catch (Exception)
         {
-            // Show error
+            _modalError = "No se pudo guardar el usuario. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 
-    private async Task SetRoleAsync()
+    private async Task SetUserRoleAsync()
     {
-        if (_editingUserId is null) return;
-        if (string.IsNullOrWhiteSpace(_newRoleName) || _newRolePermissions.Count == 0) return;
+        if (_editingUserId is null)
+        {
+            return;
+        }
 
-        _showSetRoleModal = false;
+        if (_selectedRoleId == Guid.Empty)
+        {
+            _modalError = "Selecciona un rol.";
+            return;
+        }
+
+        _saving = true;
+        _modalError = null;
+
         try
         {
-            await Client.CreateRoleAsync(_newRoleName, _newRolePermissions);
+            await Client.SetUserRoleAsync(_editingUserId.Value, _selectedRoleId);
+            CloseModals();
             await LoadUsersAsync();
+        }
+        catch (HttpRequestException exception)
+        {
+            _modalError = FriendlyError(exception);
         }
         catch (Exception)
         {
-            // Show error
+            _modalError = "No se pudo cambiar el rol. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 
-    private async Task ToggleUserStatusAsync(Guid userId)
+    private async Task ToggleUserStatusAsync(PortalUserDto user)
     {
-        _toggleUserId = userId;
+        _toggleUserId = user.Id;
+        _actionError = null;
+
         try
         {
-            var users = await Client.GetUsersAsync();
-            var user = users.Items?.FirstOrDefault(u => u.Id == _toggleUserId.Value);
-            if (user is not null)
+            if (user.IsActive)
             {
-                if (user.IsActive)
-                {
-                    await Client.DisableUserAsync(_toggleUserId.Value);
-                }
-                else
-                {
-                    await Client.EnableUserAsync(_toggleUserId.Value);
-                }
-                await LoadUsersAsync();
+                await Client.DisableUserAsync(user.Id);
             }
+            else
+            {
+                await Client.EnableUserAsync(user.Id);
+            }
+
+            await LoadUsersAsync();
+        }
+        catch (HttpRequestException exception)
+        {
+            _actionError = FriendlyError(exception);
         }
         catch (Exception)
         {
-            // Show error
+            _actionError = "No se pudo cambiar el estado del usuario. Comprueba la conexión e inténtalo de nuevo.";
         }
         finally
         {
             _toggleUserId = null;
         }
     }
+
+    private static string FriendlyError(HttpRequestException exception) =>
+        exception.Message switch
+        {
+            "UserName already in use" => "Ese nombre de usuario ya está en uso.",
+            "Email already in use" => "Ese correo ya está en uso.",
+            "The last active Administrator cannot be disabled" =>
+                "No se puede desactivar al último Administrator activo.",
+            "The last active Administrator cannot be moved to another role" =>
+                "No se puede cambiar el rol del último Administrator activo.",
+            "You cannot move yourself to a role without users.manage and roles.manage" =>
+                "No puedes cambiarte a un rol sin users.manage y roles.manage.",
+            _ => exception.Message
+        };
 }

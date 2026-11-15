@@ -187,13 +187,11 @@ public sealed class MissionControlClient(
     }
 
     public Task<Paged<PortalUserDto>> GetUsersAsync(
-        string state = "all",
         int page = 1,
         int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var uri = $"users?state={Uri.EscapeDataString(state)}" +
-                  $"&page={page.ToString(CultureInfo.InvariantCulture)}" +
+        var uri = $"users?page={page.ToString(CultureInfo.InvariantCulture)}" +
                   $"&pageSize={pageSize.ToString(CultureInfo.InvariantCulture)}";
         return GetAsync<Paged<PortalUserDto>>(uri, cancellationToken);
     }
@@ -211,7 +209,7 @@ public sealed class MissionControlClient(
             Content = JsonContent.Create(request, options: MissionControlJsonOptions)
         };
         using var response = await SendAsync(requestMsg, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<PortalUserDto>(
             MissionControlJsonOptions,
@@ -233,7 +231,29 @@ public sealed class MissionControlClient(
             Content = JsonContent.Create(request, options: MissionControlJsonOptions)
         };
         using var response = await SendAsync(requestMsg, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
+
+        return await response.Content.ReadFromJsonAsync<PortalUserDto>(
+            MissionControlJsonOptions,
+            cancellationToken) ?? throw new InvalidDataException(
+                "The Mission Control API returned an empty response.");
+    }
+
+    public async Task<PortalUserDto> SetUserRoleAsync(
+        Guid id,
+        Guid roleId,
+        CancellationToken cancellationToken = default)
+    {
+        using var requestMsg = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"users/{id:D}/role")
+        {
+            Content = JsonContent.Create(
+                new SetUserRoleRequest(roleId),
+                options: MissionControlJsonOptions)
+        };
+        using var response = await SendAsync(requestMsg, cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
 
         return await response.Content.ReadFromJsonAsync<PortalUserDto>(
             MissionControlJsonOptions,
@@ -249,7 +269,7 @@ public sealed class MissionControlClient(
             HttpMethod.Post,
             $"users/{id:D}/disable");
         using var response = await SendAsync(requestMsg, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
     }
 
     public async Task EnableUserAsync(
@@ -260,7 +280,7 @@ public sealed class MissionControlClient(
             HttpMethod.Post,
             $"users/{id:D}/enable");
         using var response = await SendAsync(requestMsg, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
     }
 
     public Task<List<RoleDto>> GetRolesAsync(CancellationToken cancellationToken = default) =>
@@ -334,5 +354,74 @@ public sealed class MissionControlClient(
             MissionControlJsonOptions,
             cancellationToken) ?? throw new InvalidDataException(
                 "The Mission Control API returned an empty response.");
+    }
+
+    private static async Task EnsureSuccessAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new HttpRequestException(
+            ReadApiError(body, response.StatusCode),
+            inner: null,
+            statusCode: response.StatusCode);
+    }
+
+    private static string ReadApiError(
+        string body,
+        System.Net.HttpStatusCode statusCode)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
+            var messages = new List<string>();
+
+            if (root.TryGetProperty("errors", out var errors) &&
+                errors.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in errors.EnumerateObject())
+                {
+                    if (property.Value.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    messages.AddRange(property.Value.EnumerateArray()
+                        .Where(item => item.ValueKind == JsonValueKind.String)
+                        .Select(item => item.GetString()!));
+                }
+            }
+
+            if (messages.Count == 0 &&
+                root.TryGetProperty("detail", out var detail) &&
+                detail.ValueKind == JsonValueKind.String)
+            {
+                messages.Add(detail.GetString()!);
+            }
+
+            if (messages.Count == 0 &&
+                root.TryGetProperty("title", out var title) &&
+                title.ValueKind == JsonValueKind.String)
+            {
+                messages.Add(title.GetString()!);
+            }
+
+            if (messages.Count > 0)
+            {
+                return string.Join(" ", messages);
+            }
+        }
+        catch (JsonException)
+        {
+            // Fall back to the generic message below.
+        }
+
+        return $"La API respondió {(int)statusCode}.";
     }
 }
