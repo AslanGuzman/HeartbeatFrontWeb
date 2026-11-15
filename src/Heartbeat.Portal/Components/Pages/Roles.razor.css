@@ -27,7 +27,7 @@
     width: fit-content;
     padding: 0.5rem 0.85rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--surface);
     color: var(--brand-blue);
     font: inherit;
@@ -53,8 +53,9 @@
     gap: 0.5rem;
     padding: 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .roles-state h2 {
@@ -73,7 +74,7 @@
     padding: 0.7rem 0.85rem;
     border: 1px solid #F0C6C6;
     border-radius: 0.5rem;
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
     font-size: 0.85rem;
 }
@@ -106,7 +107,7 @@
     min-height: 2.4rem;
     padding: 0.45rem 0.6rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--surface);
     color: var(--text-primary);
     font: inherit;
@@ -187,8 +188,15 @@
     gap: 0.85rem;
     padding: 1.1rem 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+}
+
+.role-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .role-card-heading {

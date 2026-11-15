@@ -9,31 +9,66 @@
 {
     <div class="app-shell">
         <aside class="sidebar">
-            <a class="brand" href="/" aria-label="Heartbeat, Mission Control home">
-                <span class="brand-mark" aria-hidden="true">H</span>
-                <span class="brand-copy">
-                    <strong>Heartbeat</strong>
-                    <span>Mission Control</span>
+            <a class="brand" href="/" aria-label="@T["Heartbeat, Mission Control home"]">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 21s-8.7-5.3-10.5-10.2C-.2 3.6 7.1.2 12 6.1 16.9.2 24.2 3.6 22.5 10.8 20.7 15.7 12 21 12 21Z" />
+                    </svg>
                 </span>
             </a>
 
             <NavMenu />
+
+            <div class="rail-footer">
+                <button class="rail-item rail-item--danger" type="button"
+                        @onclick="LogoutAsync" disabled="@_loggingOut"
+                        title="@T["Sign out"]">
+                    <span class="rail-chip" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <path d="m16 17 5-5-5-5" />
+                            <path d="M21 12H9" />
+                        </svg>
+                    </span>
+                    <span class="rail-label">@T["Exit"]</span>
+                </button>
+            </div>
         </aside>
 
         <div class="workspace">
             <header class="topbar">
-                <div class="topbar-title">
-                    <span>@T["Mission Control"]</span>
-                    <span class="simulated-data-badge">@T["Simulated data"]</span>
+                <div class="topbar-brand">
+                    <strong>Heartbeat</strong>
+                    <span class="topbar-divider" aria-hidden="true"></span>
+                    <span class="topbar-context">@T["Mission Control"] · @T["Crew health monitoring"]</span>
+                    @if (!ShowsRealWatchData())
+                    {
+                        <span class="simulated-data-badge">@T["Simulated data"]</span>
+                    }
                 </div>
-                <LanguageSelector />
-                <span class="topbar-context">@user.DisplayName</span>
-                <button class="logout-button" type="button" @onclick="LogoutAsync">@T["Sign out"]</button>
+                <div class="topbar-actions">
+                    <LanguageSelector />
+                    <span class="user-pill" title="@user.DisplayName">
+                        <span class="user-pill-avatar" aria-hidden="true">@Initial(user.DisplayName)</span>
+                        <span class="user-pill-name">@user.DisplayName</span>
+                    </span>
+                </div>
             </header>
 
             <main class="main-content">
                 @Body
             </main>
+
+            <footer class="app-footer">
+                <span>Heartbeat · @T["Mission Control portal"]</span>
+                <span class="app-footer-disclaimer">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
+                    </svg>
+                    @T["Monitoring prototype — not a substitute for a real medical diagnosis"]
+                </span>
+            </footer>
         </div>
 
         <div id="blazor-error-ui" data-nosnippet>
@@ -102,6 +137,17 @@ else
         await Authentication.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: true, replace: true);
     }
+
+    // /fc-en-vivo y /salud muestran datos reales del Galaxy Watch 5 y de Samsung Health, no simulados.
+    private bool ShowsRealWatchData()
+    {
+        var path = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+        return path.Equals("/fc-en-vivo", StringComparison.OrdinalIgnoreCase)
+            || path.Equals("/salud", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string Initial(string displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
 
     private void OnSessionChanged()
     {

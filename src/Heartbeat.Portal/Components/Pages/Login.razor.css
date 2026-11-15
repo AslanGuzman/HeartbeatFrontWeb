@@ -38,12 +38,8 @@
 }
 
 .login-story {
-    position: relative;
-    overflow: hidden;
-    padding: clamp(2rem, 4vw, 3.5rem);
-    background:
-        radial-gradient(ellipse at 12% 100%, rgb(255 255 255 / 9%), transparent 42%),
-        var(--brand-blue);
+    padding: clamp(2rem, 4.1vw, 3.1rem);
+    background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-hover) 100%);
 }
 
 .brand-lockup {
@@ -203,13 +199,13 @@
     padding: 0.7rem 0.8rem;
     border: 1px solid rgb(153 14 14 / 32%);
     border-radius: 0.65rem;
-    background: #FFF7F7;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
     font-size: 0.85rem;
     line-height: 1.45;
 }
 
-.login-form {
+.login-content ::deep .login-form {
     display: grid;
     gap: 1rem;
 }
@@ -227,22 +223,30 @@
 
 .form-field ::deep input {
     width: 100%;
-    min-height: 3.15rem;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: #FDFCFF;
+    min-height: 3.1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1.4px solid var(--input-border);
+    border-radius: var(--radius-control);
+    transition: border-color 160ms ease, background-color 160ms ease;
+    background: #fff;
     color: var(--text-primary);
     color-scheme: light;
     font: inherit;
     transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
 }
 
-.form-field ::deep input:focus-visible {
-    outline: 0;
+.form-field ::deep input:hover:not(:disabled) {
+    border-color: #B9BDDB;
+}
+
+.form-field ::deep input:focus {
     border-color: var(--brand-blue);
-    background: #FFFFFF;
-    box-shadow: 0 0 0 3px rgb(17 5 89 / 12%);
+    background: #FBFBFF;
+}
+
+.form-field ::deep input:focus-visible {
+    outline: 3px solid rgb(17 5 89 / 18%);
+    outline-offset: 0;
 }
 
 .form-field ::deep input:disabled {
@@ -262,14 +266,15 @@
 }
 
 .login-submit {
-    min-height: 3.15rem;
+    width: 100%;
+    min-height: 3.1rem;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.55rem;
     margin-top: 0.25rem;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
@@ -279,8 +284,12 @@
 }
 
 .login-submit:hover:not(:disabled) {
-    background: #261A6B;
+    background: var(--brand-blue-hover);
     transform: translateY(-1px);
+}
+
+.login-submit:active:not(:disabled) {
+    transform: scale(0.97);
 }
 
 .login-submit:disabled {

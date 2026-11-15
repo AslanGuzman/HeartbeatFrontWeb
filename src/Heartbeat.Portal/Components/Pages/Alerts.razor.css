@@ -68,8 +68,15 @@
     padding: 1.15rem 1.25rem;
     border: 1px solid var(--border);
     border-left: 3px solid var(--status-critical);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+}
+
+.alert-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
 }
 
 .alert-card--acknowledged {
@@ -99,7 +106,7 @@
     flex: none;
     padding: 0.45rem 0.65rem;
     border-radius: 999px;
-    background: #FCEAEA;
+    background: var(--brand-red-soft);
     color: var(--brand-red);
     font-size: 0.72rem;
     font-weight: 700;
@@ -199,7 +206,7 @@
     resize: vertical;
     padding: 0.65rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 0.55rem;
+    border-radius: 10px;
     background: #FFFFFF;
     color: var(--text-primary);
     font: inherit;
@@ -234,7 +241,7 @@
     width: fit-content;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--brand-blue);
-    border-radius: 0.5rem;
+    border-radius: 10px;
     background: var(--brand-blue);
     color: #FFFFFF;
     font: inherit;
@@ -268,8 +275,9 @@
     gap: 0.5rem;
     padding: 1.25rem;
     border: 1px solid var(--border);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-card);
     background: var(--surface);
+    box-shadow: var(--shadow-card);
 }
 
 .alerts-state h1,
