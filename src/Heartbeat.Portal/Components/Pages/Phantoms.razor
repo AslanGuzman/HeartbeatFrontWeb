@@ -1,0 +1,255 @@
+@page "/phantoms"
+@implements IAsyncDisposable
+@using System.Net
+@using System.Text.Json
+@using Microsoft.JSInterop
+@inject MissionControlClient Client
+@inject IJSRuntime JS
+
+<PageTitle>Heartbeat | Phantom comparison</PageTitle>
+
+<section class="phantoms-page" aria-labelledby="phantoms-title">
+    <header class="phantoms-heading">
+        <div>
+            <h1 id="phantoms-title">Phantom comparison</h1>
+            <p>Compare modeled body changes under the same mission environment.</p>
+        </div>
+        <span class="phantoms-badge">Simulated data · heuristic</span>
+    </header>
+
+    @if (_loading && _comparison is null)
+    {
+        <div class="phantoms-state" role="status" aria-busy="true">
+            <span class="session-spinner" aria-hidden="true"></span>
+            <span>Loading phantom profiles…</span>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="phantoms-state" role="alert">
+            <h2>Could not load the comparison</h2>
+            <p>@_error</p>
+            <button class="phantoms-button" type="button" @onclick="LoadInitialAsync">Retry</button>
+        </div>
+    }
+    else if (_comparison is not null)
+    {
+        <section class="phantoms-controls" aria-label="Comparison settings">
+            <fieldset class="phantoms-profiles">
+                <legend>Choose 2–3 profiles</legend>
+                @foreach (var profile in _profiles)
+                {
+                    var selected = _selectedProfiles.Contains(profile.Id);
+                    <label class="phantoms-profile">
+                        <input type="checkbox"
+                               checked="@selected"
+                               disabled="@(!selected && _selectedProfiles.Count == 3 || selected && _selectedProfiles.Count == 2 || _loading)"
+                               @onchange="args => ToggleProfileAsync(profile.Id, args)" />
+                        <span>
+                            <strong>@profile.Name</strong>
+                            <small>@ProfileDetails(profile)</small>
+                        </span>
+                    </label>
+                }
+            </fieldset>
+
+            <label class="phantoms-environment">
+                <span>Environment</span>
+                <select value="@_environment" @onchange="ChangeEnvironmentAsync" disabled="@_loading">
+                    @foreach (var environment in Environments)
+                    {
+                        <option value="@environment.Key">@environment.Name</option>
+                    }
+                </select>
+            </label>
+        </section>
+
+        <p class="phantoms-context">
+            @_comparison.EnvironmentName · @_comparison.Weeks weeks · @_comparison.GravityG g
+            · @_comparison.ExerciseHoursPerWeek h/week exercise
+        </p>
+
+        @if (_loading)
+        {
+            <div class="phantoms-state" role="status" aria-busy="true">
+                <span class="session-spinner" aria-hidden="true"></span>
+                <span>Updating comparison…</span>
+            </div>
+        }
+        else if (_comparison.Series.Count == 0)
+        {
+            <div class="phantoms-state">
+                <h2>No comparison data</h2>
+                <p>The selected profiles have no simulation series.</p>
+            </div>
+        }
+        else
+        {
+            <div class="phantoms-grid">
+                @foreach (var metric in Metrics)
+                {
+                    <article class="phantom-chart-card">
+                        <header>
+                            <h2>@metric.Title</h2>
+                            <span>@metric.Unit</span>
+                        </header>
+                        <div class="phantom-chart-frame">
+                            <canvas id="@($"phantom-chart-{metric.Key}")" role="img" aria-label="@metric.Title across mission weeks"></canvas>
+                        </div>
+                    </article>
+                }
+            </div>
+            <p class="phantoms-note">@_comparison.Note</p>
+            <p class="phantoms-disclaimer">Heuristic simulation for comparison only. Not a prediction or diagnosis.</p>
+        }
+    }
+</section>
+
+@code {
+    private static readonly (string Key, string Name)[] Environments =
+    [
+        ("station", "Space station"),
+        ("spacecraft", "Spacecraft"),
+        ("lunarBase", "Lunar base"),
+        ("marsBase", "Mars base"),
+        ("mining", "Mining habitat")
+    ];
+
+    private static readonly (string Key, string Title, string Unit, Func<PhantomPointResponse, decimal> Value)[] Metrics =
+    [
+        ("bone", "Bone change", "%", point => point.BoneChangePercent),
+        ("muscle", "Muscle change", "%", point => point.MuscleChangePercent),
+        ("fluid", "Fluid change", "%", point => point.FluidChangePercent),
+        ("iop", "Intraocular pressure change", "mmHg", point => point.IopChangeMmHg)
+    ];
+
+    private readonly List<Guid> _selectedProfiles = [];
+    private readonly List<PhantomProfileResponse> _profiles = [];
+    private PhantomComparisonResponse? _comparison;
+    private string _environment = "station";
+    private string? _error;
+    private bool _loading = true;
+    private bool _renderPending;
+    private IJSObjectReference? _chartsModule;
+
+    protected override async Task OnInitializedAsync() => await LoadInitialAsync();
+
+    private async Task LoadInitialAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _comparison = await Client.GetPhantomComparisonAsync();
+            _profiles.Clear();
+            _profiles.AddRange(_comparison.Series.Select(series => series.Phantom));
+            _selectedProfiles.Clear();
+            _selectedProfiles.AddRange(_profiles.Take(3).Select(profile => profile.Id));
+            _renderPending = true;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _error = "Your account cannot access the phantom comparison.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or InvalidDataException or TaskCanceledException)
+        {
+            _error = "Check your connection and try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ToggleProfileAsync(Guid profileId, ChangeEventArgs args)
+    {
+        if (args.Value is not bool isSelected)
+            return;
+
+        if (isSelected && _selectedProfiles.Count < 3)
+            _selectedProfiles.Add(profileId);
+        else if (!isSelected && _selectedProfiles.Count > 2)
+            _selectedProfiles.Remove(profileId);
+
+        await LoadComparisonAsync();
+    }
+
+    private async Task ChangeEnvironmentAsync(ChangeEventArgs args)
+    {
+        if (args.Value is string environment && Environments.Any(item => item.Key == environment))
+        {
+            _environment = environment;
+            await LoadComparisonAsync();
+        }
+    }
+
+    private async Task LoadComparisonAsync()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _comparison = await Client.GetPhantomComparisonAsync(_selectedProfiles, _environment);
+            _renderPending = true;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _error = "Your account cannot access the phantom comparison.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or JsonException or InvalidDataException or TaskCanceledException)
+        {
+            _error = "Check your connection and try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_renderPending || _comparison is null)
+            return;
+
+        _renderPending = false;
+        _chartsModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./phantoms.js");
+        foreach (var metric in Metrics)
+        {
+            await _chartsModule.InvokeVoidAsync(
+                "renderComparison",
+                $"phantom-chart-{metric.Key}",
+                new
+                {
+                    unit = metric.Unit,
+                    series = _comparison.Series
+                        .Where(series => _selectedProfiles.Contains(series.Phantom.Id))
+                        .Select(series => new
+                    {
+                        label = series.Phantom.Name,
+                        points = series.Points.Select(point => new { x = point.Week, y = metric.Value(point) })
+                    })
+                });
+        }
+    }
+
+    private static string ProfileDetails(PhantomProfileResponse profile) =>
+        $"{profile.Sex} · {profile.AgeYears} years · {profile.MassKg:0.#} kg";
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_chartsModule is null)
+            return;
+
+        try
+        {
+            await _chartsModule.InvokeVoidAsync("destroyAll");
+            await _chartsModule.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+            // The Blazor circuit has already disconnected.
+        }
+    }
+}
