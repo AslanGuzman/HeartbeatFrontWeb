@@ -1,0 +1,416 @@
+@page "/messages"
+@using System.Net
+@using System.Text.Json
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Mensajes</PageTitle>
+
+<RequirePermission Permission="@Permissions.MessagesView">
+    <ChildContent>
+        <section class="messages-page" aria-labelledby="messages-title">
+            <header class="messages-heading">
+                <div>
+                    <h1 id="messages-title">Mensajes de la tripulación</h1>
+                    <p>Consulta los mensajes y reportes enviados por los astronautas.</p>
+                </div>
+                @if (_messages is not null && !_loadingMessages)
+                {
+                    <span class="messages-total">@(_messages!.Total) mensajes</span>
+                }
+            </header>
+
+            @if (!Session.HasPermission(Permissions.CrewView))
+            {
+                <div class="messages-state" role="alert">
+                    <h2>Sin permiso para seleccionar la tripulación</h2>
+                    <p>Tu cuenta necesita el permiso crew.view para consultar mensajes.</p>
+                </div>
+            }
+            else if (_loadingCrew)
+            {
+                <div class="messages-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando tripulación…</span>
+                </div>
+            }
+            else if (_crewError is not null)
+            {
+                <div class="messages-state" role="alert">
+                    <h2>No se pudo cargar la tripulación</h2>
+                    <p>@_crewError</p>
+                    <button class="messages-button" type="button" @onclick="LoadCrewAsync">Reintentar</button>
+                </div>
+            }
+            else if (_crew is null || _crew.Length == 0)
+            {
+                <div class="messages-state">
+                    <h2>No hay astronautas registrados</h2>
+                    <p>Los mensajes aparecerán cuando exista tripulación.</p>
+                </div>
+            }
+            else
+            {
+                <label class="messages-astronaut">
+                    <span>Astronauta</span>
+                    <select @bind="_selectedAstronautId"
+                            @bind:after="SelectAstronautAsync"
+                            disabled="@(_loadingMessages || _sending)">
+                        @foreach (var astronaut in _crew)
+                        {
+                            <option value="@astronaut.AstronautId">@AstronautLabel(astronaut)</option>
+                        }
+                    </select>
+                </label>
+
+                @if (_actionError is not null)
+                {
+                    <p class="messages-error" role="alert">@_actionError</p>
+                }
+
+                @if (_loadingMessages)
+                {
+                    <div class="messages-state" role="status" aria-busy="true">
+                        <span class="session-spinner" aria-hidden="true"></span>
+                        <span>Cargando mensajes…</span>
+                    </div>
+                }
+                else if (_messagesError is not null)
+                {
+                    <div class="messages-state" role="alert">
+                        <h2>No se pudieron cargar los mensajes</h2>
+                        <p>@_messagesError</p>
+                        <button class="messages-button" type="button" @onclick="LoadMessagesAsync">Reintentar</button>
+                    </div>
+                }
+                else if (_messages is null || _messages.Items.Count == 0)
+                {
+                    <div class="messages-state messages-empty">
+                        <h2>No hay mensajes</h2>
+                        <p>Los mensajes de este astronauta aparecerán aquí.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="message-list">
+                        @foreach (var message in _messages.Items)
+                        {
+                            var fromAstronaut = message.Direction == MessageDirection.ToMissionControl;
+                            <article @key="message.Id"
+                                     class="message-card @(fromAstronaut ? "message-card--incoming" : "message-card--outgoing")">
+                                <header class="message-card-heading">
+                                    <div>
+                                        <h2>@message.Subject</h2>
+                                        <p>
+                                            @(fromAstronaut ? message.SenderName ?? "Astronauta" : message.SenderName ?? "Mission Control")
+                                            · @FormatTimestamp(message.CreatedAt)
+                                        </p>
+                                    </div>
+                                    <span class="message-kind">@KindLabel(message.Kind)</span>
+                                </header>
+                                <p class="message-body">@message.Body</p>
+                                @if (fromAstronaut && message.ReadAt is null)
+                                {
+                                    <button class="messages-action"
+                                            type="button"
+                                            disabled="@(_markingMessageId == message.Id)"
+                                            @onclick="() => MarkReadAsync(message)">
+                                        @(_markingMessageId == message.Id ? "Guardando…" : "Marcar como leído")
+                                    </button>
+                                }
+                                else if (fromAstronaut)
+                                {
+                                    <span class="message-read">Leído</span>
+                                }
+                            </article>
+                        }
+                    </div>
+
+                    <nav class="messages-pagination" aria-label="Páginas de mensajes">
+                        <span>Página @_page de @PageCount</span>
+                        <div>
+                            <button class="messages-button messages-button--secondary"
+                                    type="button"
+                                    disabled="@(_page <= 1 || _loadingMessages)"
+                                    @onclick="PreviousPageAsync">
+                                Anterior
+                            </button>
+                            <button class="messages-button messages-button--secondary"
+                                    type="button"
+                                    disabled="@(_page >= PageCount || _loadingMessages)"
+                                    @onclick="NextPageAsync">
+                                Siguiente
+                            </button>
+                        </div>
+                    </nav>
+                }
+
+                @if (Session.HasPermission(Permissions.MessagesSend))
+                {
+                    <form class="message-compose" @onsubmit="SendAsync" @onsubmit:preventDefault>
+                        <h2>Responder</h2>
+                        <label>
+                            <span>Asunto</span>
+                            <input @bind="_subject"
+                                   maxlength="120"
+                                   required
+                                   disabled="@_sending" />
+                        </label>
+                        <label>
+                            <span>Mensaje</span>
+                            <textarea @bind="_body"
+                                      maxlength="4000"
+                                      required
+                                      rows="5"
+                                      disabled="@_sending"></textarea>
+                        </label>
+                        @if (_sendStatus is not null)
+                        {
+                            <p class="messages-success" role="status">@_sendStatus</p>
+                        }
+                        <button class="messages-button" type="submit" disabled="@_sending">
+                            @(_sending ? "Enviando…" : "Enviar mensaje")
+                        </button>
+                    </form>
+                }
+            }
+        </section>
+    </ChildContent>
+    <NotAuthorized>
+        <section class="messages-state" role="alert">
+            <h1>Sin permiso para ver los mensajes</h1>
+            <p>Tu cuenta no tiene el permiso messages.view.</p>
+        </section>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    private const int PageSize = 50;
+    private CrewSummaryDto[]? _crew;
+    private Paged<MessageDto>? _messages;
+    private Guid _selectedAstronautId;
+    private Guid? _markingMessageId;
+    private int _page = 1;
+    private bool _loadingCrew = true;
+    private bool _loadingMessages;
+    private bool _sending;
+    private string? _crewError;
+    private string? _messagesError;
+    private string? _actionError;
+    private string? _sendStatus;
+    private string _subject = string.Empty;
+    private string _body = string.Empty;
+
+    private int PageCount =>
+        _messages is null ? 1 : Math.Max(1, (int)Math.Ceiling((double)_messages.Total / PageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.HasPermission(Permissions.CrewView))
+        {
+            _loadingCrew = false;
+            return;
+        }
+
+        await LoadCrewAsync();
+    }
+
+    private async Task LoadCrewAsync()
+    {
+        _loadingCrew = true;
+        _crewError = null;
+
+        try
+        {
+            _crew = await Client.GetCrewAsync();
+            if (_crew.Length > 0)
+            {
+                _selectedAstronautId = _crew[0].AstronautId;
+                _page = 1;
+                await LoadMessagesAsync();
+            }
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _crewError = "Tu cuenta no tiene permiso para ver la tripulación.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _crewError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loadingCrew = false;
+        }
+    }
+
+    private async Task SelectAstronautAsync()
+    {
+        _page = 1;
+        await LoadMessagesAsync();
+    }
+
+    private async Task LoadMessagesAsync()
+    {
+        if (_selectedAstronautId == Guid.Empty)
+        {
+            return;
+        }
+
+        _loadingMessages = true;
+        _messagesError = null;
+        _actionError = null;
+
+        try
+        {
+            _messages = await Client.GetCrewMessagesAsync(_selectedAstronautId, _page, PageSize);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _messages = null;
+            _messagesError = "Tu cuenta no tiene permiso para consultar estos mensajes.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _messages = null;
+            _messagesError = "El astronauta ya no está disponible.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _messages = null;
+            _messagesError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loadingMessages = false;
+        }
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (_page > 1)
+        {
+            _page--;
+            await LoadMessagesAsync();
+        }
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (_page < PageCount)
+        {
+            _page++;
+            await LoadMessagesAsync();
+        }
+    }
+
+    private async Task MarkReadAsync(MessageDto message)
+    {
+        if (message.Direction != MessageDirection.ToMissionControl ||
+            message.ReadAt is not null ||
+            _markingMessageId is not null)
+        {
+            return;
+        }
+
+        _markingMessageId = message.Id;
+        _actionError = null;
+
+        try
+        {
+            await Client.MarkMessageReadAsync(message.Id);
+            await LoadMessagesAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
+        {
+            _actionError = "Este mensaje no puede marcarse como leído.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _actionError = "El mensaje ya no está disponible.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _actionError = "No se pudo marcar el mensaje como leído.";
+        }
+        finally
+        {
+            _markingMessageId = null;
+        }
+    }
+
+    private async Task SendAsync()
+    {
+        var subject = _subject.Trim();
+        var body = _body.Trim();
+        if (subject.Length is 0 or > 120 || body.Length is 0 or > 4000)
+        {
+            _actionError = "El asunto es obligatorio y admite 120 caracteres; el mensaje admite hasta 4000.";
+            return;
+        }
+
+        if (!Session.HasPermission(Permissions.MessagesSend))
+        {
+            return;
+        }
+
+        _sending = true;
+        _actionError = null;
+        _sendStatus = null;
+
+        try
+        {
+            await Client.SendCrewMessageAsync(
+                _selectedAstronautId,
+                new SendMessageRequest(subject, body));
+            _subject = string.Empty;
+            _body = string.Empty;
+            _page = 1;
+            _sendStatus = "Mensaje enviado.";
+            await LoadMessagesAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _actionError = "Tu cuenta no tiene permiso para enviar mensajes.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _actionError = "El astronauta ya no está disponible.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _actionError = "No se pudo enviar el mensaje. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _sending = false;
+        }
+    }
+
+    private static string AstronautLabel(CrewSummaryDto astronaut) =>
+        string.IsNullOrWhiteSpace(astronaut.CallSign)
+            ? astronaut.DisplayName
+            : $"{astronaut.DisplayName} ({astronaut.CallSign})";
+
+    private static string KindLabel(MessageKind kind) =>
+        kind == MessageKind.Report ? "Reporte" : "Mensaje";
+
+    private static string FormatTimestamp(DateTimeOffset timestamp) =>
+        timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+}

@@ -1,0 +1,356 @@
+@page "/roles"
+@using System.Net
+@using System.Text.Json
+@using Heartbeat.Shared
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Roles y permisos</PageTitle>
+
+<RequirePermission Permission="@Permissions.RolesManage">
+    <ChildContent>
+        <section class="roles-page" aria-labelledby="roles-title">
+            <header class="roles-heading">
+                <div>
+                    <h1 id="roles-title">Roles y permisos</h1>
+                    <p>Define qué puede hacer cada tipo de cuenta del portal.</p>
+                </div>
+                @if (!_loading && !_forbidden && _error is null)
+                {
+                    <button class="roles-button roles-button--primary"
+                            type="button"
+                            @onclick="OpenCreateEditor">Crear rol</button>
+                }
+            </header>
+
+            @if (_loading)
+            {
+                <div class="roles-state" role="status" aria-busy="true">
+                    <span class="session-spinner" aria-hidden="true"></span>
+                    <span>Cargando roles…</span>
+                </div>
+            }
+            else if (_forbidden)
+            {
+                <div class="roles-state" role="alert">
+                    <h2>Sin permiso para administrar roles</h2>
+                    <p>Tu cuenta no tiene el permiso roles.manage.</p>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="roles-state" role="alert">
+                    <h2>No se pudieron cargar los roles</h2>
+                    <p>@_error</p>
+                    <button class="roles-button" type="button" @onclick="LoadAsync">Reintentar</button>
+                </div>
+            }
+            else
+            {
+                @if (_editorOpen)
+                {
+                    <form class="role-editor" @onsubmit="SaveAsync" @onsubmit:preventDefault>
+                        <h2>@(_editingRoleId is null ? "Nuevo rol" : "Editar rol")</h2>
+
+                        <label class="role-editor-name">
+                            <span>Nombre</span>
+                            <input @bind="_editorName"
+                                   maxlength="50"
+                                   required
+                                   disabled="@_saving" />
+                        </label>
+
+                        @if (IsEditingOwnRole)
+                        {
+                            <p class="role-editor-hint">
+                                No puedes quitarte <code>users.manage</code> ni
+                                <code>roles.manage</code> de tu propio rol.
+                            </p>
+                        }
+
+                        <div class="permission-groups">
+                            @foreach (var group in _permissions.GroupBy(p => p.Group))
+                            {
+                                <fieldset class="permission-group">
+                                    <legend>@group.Key</legend>
+                                    @foreach (var permission in group)
+                                    {
+                                        <label class="permission-check">
+                                            <input type="checkbox"
+                                                   checked="@_selected.Contains(permission.Key)"
+                                                   disabled="@(_saving || IsSelfProtected(permission.Key))"
+                                                   @onchange="e => TogglePermission(permission.Key, Convert.ToBoolean(e.Value))" />
+                                            <span class="permission-description">@permission.Description</span>
+                                            <code class="permission-key">@permission.Key</code>
+                                        </label>
+                                    }
+                                </fieldset>
+                            }
+                        </div>
+
+                        @if (_saveError is not null)
+                        {
+                            <p class="roles-error" role="alert">@_saveError</p>
+                        }
+
+                        <div class="role-editor-actions">
+                            <button class="roles-button roles-button--primary"
+                                    type="submit"
+                                    disabled="@(_saving || string.IsNullOrWhiteSpace(_editorName))">
+                                @(_saving ? "Guardando…" : "Guardar")
+                            </button>
+                            <button class="roles-button"
+                                    type="button"
+                                    disabled="@_saving"
+                                    @onclick="CloseEditor">Cancelar</button>
+                        </div>
+                    </form>
+                }
+
+                @if (_actionError is not null)
+                {
+                    <p class="roles-error" role="alert">@_actionError</p>
+                }
+
+                @if (_roles.Count == 0)
+                {
+                    <div class="roles-state roles-empty">
+                        <h2>No hay roles definidos</h2>
+                        <p>Crea el primer rol con el botón de arriba.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="roles-list">
+                        @foreach (var role in _roles)
+                        {
+                            <article @key="role.Id" class="role-card">
+                                <header class="role-card-heading">
+                                    <div>
+                                        <h2>@role.Name</h2>
+                                        <p>@UserCountLabel(role.UserCount)</p>
+                                    </div>
+                                    @if (role.IsSystem)
+                                    {
+                                        <span class="role-badge">Rol del sistema</span>
+                                    }
+                                </header>
+
+                                @if (role.Permissions.Count == 0)
+                                {
+                                    <p class="role-no-permissions">Sin permisos asignados.</p>
+                                }
+                                else
+                                {
+                                    <ul class="role-permissions" aria-label="Permisos de @role.Name">
+                                        @foreach (var permission in role.Permissions)
+                                        {
+                                            <li @key="permission">@permission</li>
+                                        }
+                                    </ul>
+                                }
+
+                                <div class="role-actions">
+                                    <button class="roles-action"
+                                            type="button"
+                                            disabled="@(_saving || role.Name == RoleNames.Administrator)"
+                                            @onclick="() => OpenEditEditor(role)">Editar</button>
+                                    @if (!role.IsSystem && role.UserCount == 0)
+                                    {
+                                        <button class="roles-action roles-action--danger"
+                                                type="button"
+                                                disabled="@_saving"
+                                                @onclick="() => DeleteAsync(role)">Eliminar</button>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            }
+        </section>
+    </ChildContent>
+</RequirePermission>
+
+@code {
+    private List<RoleDto> _roles = [];
+    private IReadOnlyList<PermissionDto> _permissions = [];
+    private bool _loading = true;
+    private bool _forbidden;
+    private string? _error;
+    private bool _editorOpen;
+    private bool _saving;
+    private Guid? _editingRoleId;
+    private string _editorName = string.Empty;
+    private HashSet<string> _selected = new(StringComparer.Ordinal);
+    private string? _saveError;
+    private string? _actionError;
+
+    private bool IsEditingOwnRole =>
+        _editingRoleId is not null && Session.User?.Role.Id == _editingRoleId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.HasPermission(Permissions.RolesManage))
+        {
+            _forbidden = true;
+            _loading = false;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _forbidden = false;
+        _error = null;
+
+        try
+        {
+            var rolesTask = Client.GetRolesAsync();
+            var permissionsTask = Client.GetPermissionsAsync();
+            await Task.WhenAll(rolesTask, permissionsTask);
+            _roles = await rolesTask;
+            _permissions = await permissionsTask;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _forbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _error = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenCreateEditor()
+    {
+        _editorOpen = true;
+        _editingRoleId = null;
+        _editorName = string.Empty;
+        _selected = new HashSet<string>(StringComparer.Ordinal);
+        _saveError = null;
+        _actionError = null;
+    }
+
+    private void OpenEditEditor(RoleDto role)
+    {
+        _editorOpen = true;
+        _editingRoleId = role.Id;
+        _editorName = role.Name;
+        _selected = new HashSet<string>(role.Permissions, StringComparer.Ordinal);
+        _saveError = null;
+        _actionError = null;
+    }
+
+    private void CloseEditor()
+    {
+        _editorOpen = false;
+        _editingRoleId = null;
+        _saveError = null;
+    }
+
+    private void TogglePermission(string key, bool isChecked)
+    {
+        if (isChecked)
+        {
+            _selected.Add(key);
+        }
+        else
+        {
+            _selected.Remove(key);
+        }
+    }
+
+    private bool IsSelfProtected(string key) =>
+        IsEditingOwnRole &&
+        _selected.Contains(key) &&
+        (key == Permissions.UsersManage || key == Permissions.RolesManage);
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_editorName))
+        {
+            return;
+        }
+
+        _saving = true;
+        _saveError = null;
+
+        try
+        {
+            var permissions = _selected.Order(StringComparer.Ordinal).ToList();
+            if (_editingRoleId is null)
+            {
+                await Client.CreateRoleAsync(_editorName.Trim(), permissions);
+            }
+            else
+            {
+                await Client.UpdateRoleAsync(_editingRoleId.Value, _editorName.Trim(), permissions);
+            }
+
+            _editorOpen = false;
+            _editingRoleId = null;
+            await LoadAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
+        {
+            _saveError = "El servidor rechazó el cambio. Revisa que el nombre no esté repetido, " +
+                         "que no quites users.manage/roles.manage de tu propio rol y que el rol " +
+                         "no sea el Administrator.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _saveError = "Tu cuenta no tiene el permiso roles.manage.";
+        }
+        catch (Exception)
+        {
+            _saveError = "No se pudo guardar el rol. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DeleteAsync(RoleDto role)
+    {
+        _saving = true;
+        _actionError = null;
+
+        try
+        {
+            await Client.DeleteRoleAsync(role.Id);
+            await LoadAsync();
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Conflict)
+        {
+            _actionError = "No se puede eliminar el rol: es un rol del sistema o todavía tiene usuarios asignados.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _actionError = "Tu cuenta no tiene el permiso roles.manage.";
+        }
+        catch (Exception)
+        {
+            _actionError = "No se pudo eliminar el rol. Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private static string UserCountLabel(int userCount) =>
+        userCount == 1 ? "1 usuario" : $"{userCount} usuarios";
+}

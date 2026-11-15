@@ -1,0 +1,309 @@
+.crew-dashboard {
+    display: grid;
+    gap: 1.6rem;
+}
+
+.crew-heading,
+.crew-roster-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.crew-heading h1,
+.crew-roster-heading h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    letter-spacing: -0.025em;
+}
+
+.crew-heading h1 {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.crew-heading p,
+.crew-roster-heading p {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.crew-count {
+    flex: none;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--brand-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.crew-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+}
+
+.crew-summary > div {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1.1rem 1.3rem;
+}
+
+.crew-summary > div + div {
+    border-left: 1px solid rgb(255 255 255 / 20%);
+}
+
+.crew-summary span {
+    color: rgb(255 255 255 / 78%);
+    font-size: 0.82rem;
+}
+
+.crew-summary strong {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.crew-roster {
+    display: grid;
+    gap: 1rem;
+}
+
+.crew-roster-heading {
+    align-items: center;
+}
+
+.crew-roster-heading h2 {
+    font-size: 1.25rem;
+}
+
+.crew-roster-heading p {
+    font-size: 0.85rem;
+}
+
+.crew-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+    gap: 1rem;
+}
+
+.crew-card {
+    min-width: 0;
+    display: grid;
+    gap: 1rem;
+    padding: 1.1rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.crew-card:hover {
+    box-shadow: 0 0 0 2px rgb(17 5 89 / 14%);
+    background: #FCFBFF;
+}
+
+.crew-card--normal {
+    border-left-color: var(--status-normal);
+}
+
+.crew-card--watch {
+    border-left-color: var(--status-watch);
+}
+
+.crew-card--critical {
+    border-left-color: var(--status-critical);
+}
+
+.crew-card-heading {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.crew-avatar {
+    flex: none;
+    width: 3rem;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 0.75rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.crew-identity {
+    min-width: 0;
+    display: grid;
+    gap: 0.2rem;
+}
+
+.crew-identity strong,
+.crew-identity span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.crew-identity strong {
+    font-size: 1rem;
+}
+
+.crew-identity span {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.crew-status {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.crew-status > span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.crew-status--normal {
+    background: #EAF6ED;
+    color: #165D2D;
+}
+
+.crew-status--normal > span {
+    background: var(--status-normal);
+}
+
+.crew-status--watch {
+    background: #FFF3D4;
+    color: #704900;
+}
+
+.crew-status--watch > span {
+    background: var(--status-watch);
+}
+
+.crew-status--critical {
+    background: #FCEAEA;
+    color: var(--brand-red);
+}
+
+.crew-status--critical > span {
+    background: var(--status-critical);
+}
+
+.crew-status--unknown {
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+}
+
+.crew-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 0.65rem;
+    margin: 0;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+.crew-metrics > div {
+    min-width: 0;
+}
+
+.crew-metrics dt {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+}
+
+.crew-metrics dd {
+    overflow-wrap: anywhere;
+    margin: 0.25rem 0 0;
+    color: var(--brand-blue);
+    font-size: 0.86rem;
+    font-weight: 650;
+}
+
+.crew-card-action {
+    justify-self: end;
+    color: var(--brand-blue);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.crew-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.45rem;
+    padding: 1.4rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.crew-state h2,
+.crew-state p {
+    margin: 0;
+}
+
+.crew-state h2 {
+    color: var(--brand-blue);
+    font-size: 1.1rem;
+}
+
+.crew-state p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.crew-state[aria-busy="true"] {
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+}
+
+.crew-retry {
+    margin-top: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+@media (max-width: 42rem) {
+    .crew-heading,
+    .crew-roster-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .crew-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .crew-summary > div + div {
+        border-top: 1px solid rgb(255 255 255 / 20%);
+        border-left: 0;
+    }
+}

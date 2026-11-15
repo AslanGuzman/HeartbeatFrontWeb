@@ -1,8 +1,8 @@
 .login-page {
     min-height: 100svh;
     padding: 5px 4.8vw;
-    background: #181818;
-    color: #fff;
+    background: var(--brand-blue);
+    color: #FFFFFF;
 }
 
 .login-canvas {
@@ -10,7 +10,7 @@
     display: grid;
     place-items: center;
     padding: clamp(2rem, 8vh, 4.35rem) clamp(1rem, 2.5vw, 2rem);
-    background: #f3f3f8;
+    background: #FFFFFF;
 }
 
 .login-card {
@@ -20,8 +20,8 @@
     grid-template-columns: 0.96fr 1.04fr;
     overflow: hidden;
     border-radius: 30px;
-    background: #181818;
-    box-shadow: 0 22px 38px rgb(18 16 35 / 18%);
+    background: #FFFFFF;
+    box-shadow: 0 22px 38px rgb(17 5 89 / 14%);
 }
 
 .login-story,
@@ -34,7 +34,7 @@
 
 .login-story {
     padding: clamp(2rem, 4.1vw, 3.1rem);
-    background: #211365;
+    background: var(--brand-blue);
 }
 
 .brand-lockup {
@@ -45,7 +45,7 @@
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    color: #fff;
+    color: #FFFFFF;
     font-size: clamp(1.6rem, 2.8vw, 1.95rem);
     font-weight: 800;
     letter-spacing: -0.045em;
@@ -61,14 +61,14 @@
 .brand-lockup p,
 .mission-copy p {
     margin: 0.8rem 0 0;
-    color: #e2ddff;
+    color: rgb(255 255 255 / 82%);
     line-height: 1.55;
 }
 
 .monitor {
     padding: 1rem 0.95rem 0.85rem;
     border-radius: 16px;
-    background: #302171;
+    background: #FFFFFF;
 }
 
 .monitor-heading,
@@ -77,7 +77,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 0.65rem;
-    color: #ded8ff;
+    color: var(--brand-blue);
     font-size: 0.69rem;
     line-height: 1.3;
 }
@@ -90,7 +90,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    color: #7affc4;
+    color: var(--brand-red);
     white-space: nowrap;
 }
 
@@ -98,8 +98,8 @@
     width: 0.36rem;
     height: 0.36rem;
     border-radius: 50%;
-    background: #41f0a0;
-    box-shadow: 0 0 9px rgb(65 240 160 / 70%);
+    background: var(--brand-red);
+    box-shadow: 0 0 9px rgb(153 14 14 / 32%);
 }
 
 .ecg {
@@ -116,7 +116,7 @@
 
 .ecg-track path {
     fill: none;
-    stroke: #ff7182;
+    stroke: var(--brand-red);
     stroke-width: 3.2;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -135,12 +135,12 @@
 }
 
 .bpm {
-    color: #e7e1ff;
+    color: var(--brand-blue);
     white-space: nowrap;
 }
 
 .bpm span {
-    color: #ff90a0;
+    color: var(--brand-red);
 }
 
 .mission-copy {
@@ -149,7 +149,7 @@
 
 .mission-copy h2 {
     margin: 0;
-    color: #fff;
+    color: #FFFFFF;
     font-size: clamp(1.4rem, 2.5vw, 1.75rem);
     letter-spacing: -0.025em;
 }
@@ -161,7 +161,7 @@
 
 .login-panel {
     padding: clamp(2.5rem, 5.5vw, 4rem);
-    background: #181818;
+    background: #FFFFFF;
 }
 
 .login-content {
@@ -175,7 +175,7 @@
 
 .login-heading h1 {
     margin: 0;
-    color: #c4baff;
+    color: var(--brand-blue);
     font-size: clamp(1.7rem, 3vw, 2rem);
     letter-spacing: -0.035em;
     line-height: 1.2;
@@ -183,17 +183,17 @@
 
 .login-heading p {
     margin: 0.55rem 0 0;
-    color: #aeb9d0;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
 .session-notice {
     margin: -0.65rem 0 1.1rem;
     padding: 0.7rem 0.8rem;
-    border: 1px solid #594c8e;
+    border: 1px solid rgb(153 14 14 / 32%);
     border-radius: 0.65rem;
-    background: #282143;
-    color: #e2ddff;
+    background: #FFF7F7;
+    color: var(--brand-red);
     font-size: 0.85rem;
     line-height: 1.45;
 }
@@ -209,7 +209,7 @@
 }
 
 .form-field label {
-    color: #9ca8c0;
+    color: var(--text-secondary);
     font-size: 0.75rem;
     font-weight: 700;
 }
@@ -218,16 +218,16 @@
     width: 100%;
     min-height: 3.35rem;
     padding: 0.75rem 0.9rem;
-    border: 1px solid #e5e4eb;
+    border: 1px solid var(--border);
     border-radius: 12px;
     background: #fff;
-    color: #1b1b22;
+    color: var(--text-primary);
     color-scheme: light;
     font: inherit;
 }
 
 .form-field input:focus-visible {
-    outline: 3px solid #a694ff;
+    outline: 3px solid var(--brand-blue);
     outline-offset: 2px;
 }
 
@@ -236,13 +236,13 @@
 }
 
 .form-field ::deep .validation-message {
-    color: #ff9ba6;
+    color: var(--brand-red);
     font-size: 0.78rem;
 }
 
 .login-error {
     margin: -0.3rem 0 0;
-    color: #ff9ba6;
+    color: var(--brand-red);
     font-size: 0.85rem;
     line-height: 1.45;
 }
@@ -256,8 +256,8 @@
     margin-top: 0.25rem;
     border: 0;
     border-radius: 12px;
-    background: #25156d;
-    color: #fff;
+    background: var(--brand-blue);
+    color: #FFFFFF;
     font: inherit;
     font-size: 0.95rem;
     font-weight: 700;
@@ -266,7 +266,7 @@
 }
 
 .login-submit:hover:not(:disabled) {
-    background: #39258c;
+    background: #261A6B;
     transform: translateY(-1px);
 }
 
@@ -295,15 +295,15 @@
     margin-top: 1.8rem;
     padding: 1rem 0.95rem;
     border-radius: 11px;
-    background: #f5f3fb;
-    color: #465475;
+    background: var(--surface-raised);
+    color: var(--text-secondary);
     font-size: 0.77rem;
     line-height: 1.45;
 }
 
 .demo-access h2 {
     margin: 0 0 0.25rem;
-    color: #293251;
+    color: var(--brand-blue);
     font-size: 0.79rem;
 }
 
@@ -312,7 +312,7 @@
 }
 
 .login-submit:focus-visible {
-    outline-color: #a694ff;
+    outline-color: var(--brand-blue);
 }
 
 @media (max-width: 760px) {

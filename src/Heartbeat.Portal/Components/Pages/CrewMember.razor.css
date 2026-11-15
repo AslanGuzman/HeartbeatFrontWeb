@@ -1,0 +1,653 @@
+.astronaut-detail {
+    display: grid;
+    gap: 1.35rem;
+}
+
+.crew-member-back {
+    width: fit-content;
+    color: var(--brand-blue);
+    font-weight: 650;
+    text-decoration: none;
+}
+
+.crew-member-back:hover {
+    text-decoration: underline;
+}
+
+.astronaut-heading,
+.section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.astronaut-heading h1,
+.section-heading h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    letter-spacing: -0.025em;
+}
+
+.astronaut-heading h1 {
+    font-size: clamp(1.7rem, 4vw, 2.25rem);
+}
+
+.astronaut-heading p,
+.section-heading p {
+    margin: 0.4rem 0 0;
+    color: var(--text-secondary);
+}
+
+.section-heading h2 {
+    font-size: 1.3rem;
+}
+
+.astronaut-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.astronaut-avatar {
+    flex: none;
+    width: 3.25rem;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 0.85rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.astronaut-profile dl {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem 1rem;
+    margin: 0;
+}
+
+.astronaut-profile dt {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+}
+
+.astronaut-profile dd {
+    margin: 0.2rem 0 0;
+    color: var(--brand-blue);
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+.vitals-section,
+.history-section {
+    display: grid;
+    gap: 1rem;
+}
+
+.clinical-disclaimer {
+    margin: 0;
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--brand-blue);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.vitals-layout {
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.72fr) minmax(0, 1.7fr);
+    align-items: start;
+    gap: 1rem;
+}
+
+.body-map-panel {
+    position: sticky;
+    top: 1rem;
+    display: grid;
+    justify-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 1.15rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface-raised);
+}
+
+.body-map-panel figcaption {
+    width: 100%;
+    display: grid;
+    gap: 0.25rem;
+    text-align: center;
+}
+
+.body-map-panel figcaption strong {
+    color: var(--brand-blue);
+}
+
+.body-map-panel figcaption span {
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.body-map {
+    width: min(100%, 12rem);
+    height: 21rem;
+}
+
+.figure-part {
+    fill: #FFFFFF;
+    stroke: var(--brand-blue);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.25;
+}
+
+.map-dot {
+    stroke: #FFFFFF;
+    stroke-width: 3;
+}
+
+.map-dot--normal,
+.legend-dot--normal {
+    fill: var(--status-normal);
+    background: var(--status-normal);
+}
+
+.map-dot--watch,
+.legend-dot--watch {
+    fill: var(--status-watch);
+    background: var(--status-watch);
+}
+
+.map-dot--critical,
+.legend-dot--critical {
+    fill: var(--status-critical);
+    background: var(--status-critical);
+}
+
+.map-dot--unknown,
+.legend-dot--unknown {
+    fill: #8A8795;
+    background: #8A8795;
+}
+
+.map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.45rem 0.8rem;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+}
+
+.map-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.legend-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    display: inline-block;
+    border-radius: 50%;
+}
+
+.indicator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.indicator-card {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.8rem;
+    background: var(--surface);
+}
+
+.indicator-card > header,
+.evaluation-item > header {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.indicator-card h3,
+.evaluation-item h3 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 0.95rem;
+}
+
+.indicator-evaluation {
+    display: block;
+    margin-top: 0.2rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+}
+
+.health-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.32rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.health-chip--normal {
+    background: #EAF6ED;
+    color: #165D2D;
+}
+
+.health-chip--watch {
+    background: #FFF3D4;
+    color: #704900;
+}
+
+.health-chip--critical {
+    background: #FCEAEA;
+    color: var(--brand-red);
+}
+
+.health-chip--unknown {
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+}
+
+.indicator-value {
+    color: var(--brand-blue);
+    font-size: 1.25rem;
+    line-height: 1.2;
+}
+
+.indicator-recorded {
+    color: var(--text-secondary);
+    font-size: 0.73rem;
+}
+
+.indicator-reference {
+    width: 100%;
+    padding-top: 0.55rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.indicator-reference summary {
+    width: fit-content;
+    color: var(--brand-blue);
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.indicator-reference p {
+    margin: 0.65rem 0;
+}
+
+.indicator-reference ul,
+.evaluation-item ul {
+    margin: 0.35rem 0 0.75rem;
+    padding-left: 1.15rem;
+}
+
+.indicator-reference strong,
+.evaluation-item > strong {
+    color: var(--brand-blue);
+    font-size: 0.78rem;
+}
+
+.reference-sources {
+    overflow-wrap: anywhere;
+}
+
+.reference-sources a {
+    color: var(--brand-blue);
+    text-underline-offset: 0.15em;
+}
+
+.indicator-reference-pending,
+.history-detail-unavailable {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.history-filters {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.history-filters label {
+    min-width: 9rem;
+    display: grid;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.history-filters input,
+.history-filters select {
+    min-height: 2.55rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: #FFFFFF;
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.history-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.crew-member-retry,
+.history-reset,
+.history-detail-button {
+    min-height: 2.45rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.history-reset {
+    background: #FFFFFF;
+    color: var(--brand-blue);
+}
+
+.history-reset:disabled {
+    border-color: var(--border);
+    color: #8A8795;
+    cursor: not-allowed;
+}
+
+.history-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.history-table th,
+.history-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.history-table th {
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.history-table td {
+    color: var(--text-primary);
+    font-size: 0.86rem;
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.history-action {
+    text-align: right;
+}
+
+.history-detail-button {
+    min-height: 2.1rem;
+    padding-block: 0.35rem;
+}
+
+.history-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.history-pagination > div {
+    display: flex;
+    gap: 0.45rem;
+}
+
+.checkup-detail {
+    display: grid;
+    gap: 1rem;
+    padding: 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 0.9rem;
+    background: var(--surface);
+}
+
+.checkup-note {
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border-left: 3px solid var(--brand-blue);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.evaluation-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: 0.75rem;
+}
+
+.evaluation-item {
+    padding: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.7rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.evaluation-value {
+    margin: 0.55rem 0;
+    color: var(--brand-blue);
+    font-weight: 650;
+}
+
+.evaluation-value span {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.evaluation-escalation {
+    margin: 0.6rem 0;
+    padding: 0.6rem;
+    border-left: 3px solid var(--status-watch);
+    background: var(--surface-raised);
+}
+
+.reference-source-note {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.crew-member-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.crew-member-state h1,
+.crew-member-state h3,
+.crew-member-state p {
+    margin: 0;
+}
+
+.crew-member-state h1,
+.crew-member-state h3 {
+    color: var(--brand-blue);
+    font-size: 1.1rem;
+}
+
+.crew-member-state p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.crew-member-state[aria-busy="true"] {
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+}
+
+.crew-member-state a {
+    color: var(--brand-blue);
+    font-weight: 650;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+@media (max-width: 60rem) {
+    .vitals-layout {
+        grid-template-columns: minmax(11rem, 0.6fr) minmax(0, 1.4fr);
+    }
+
+    .body-map {
+        height: 19rem;
+    }
+
+    .indicator-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 44rem) {
+    .astronaut-heading,
+    .section-heading {
+        align-items: flex-start;
+    }
+
+    .astronaut-profile {
+        align-items: flex-start;
+    }
+
+    .astronaut-profile dl {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .vitals-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .body-map-panel {
+        position: static;
+    }
+
+    .body-map {
+        height: 16rem;
+    }
+
+    .indicator-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .history-filters {
+        align-items: stretch;
+    }
+
+    .history-filters label {
+        flex: 1 1 10rem;
+    }
+
+    .history-filter-actions {
+        flex: 1 0 100%;
+    }
+
+    .history-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 30rem) {
+    .astronaut-heading {
+        flex-direction: column;
+    }
+
+    .astronaut-profile {
+        flex-direction: column;
+    }
+
+    .astronaut-profile dl {
+        width: 100%;
+        grid-template-columns: 1fr;
+    }
+
+    .indicator-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .history-filters label {
+        flex-basis: 100%;
+    }
+
+    .history-filter-actions {
+        flex-wrap: wrap;
+    }
+}

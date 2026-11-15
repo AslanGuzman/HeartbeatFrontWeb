@@ -1,3 +1,7 @@
+@implements IDisposable
+@inject MissionControlSession Session
+@inject AlertCounterState AlertCounter
+
 <nav class="primary-navigation" aria-label="Navegación principal">
     <ul>
         <li>
@@ -12,7 +16,16 @@
         </li>
         <li>
             <RequirePermission Permission="@Permissions.AlertsView">
-                <NavLink href="/alerts" Match="NavLinkMatch.Prefix">Alertas</NavLink>
+                <NavLink href="/alerts" Match="NavLinkMatch.Prefix">
+                    <span>Alertas</span>
+                    @if (AlertCounter.OpenCount is > 0)
+                    {
+                        <span class="nav-alert-count"
+                              aria-label="@($"{AlertCounter.OpenCount} alertas abiertas")">
+                            @AlertCounter.OpenCount
+                        </span>
+                    }
+                </NavLink>
             </RequirePermission>
         </li>
         <li>
@@ -32,3 +45,24 @@
         </li>
     </ul>
 </nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AlertCounter.Changed += OnAlertCounterChanged;
+        if (Session.HasPermission(Permissions.AlertsView))
+        {
+            _ = AlertCounter.RefreshAsync();
+        }
+    }
+
+    private void OnAlertCounterChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AlertCounter.Changed -= OnAlertCounterChanged;
+    }
+}

@@ -25,6 +25,7 @@ builder.Services.AddScoped(services => new MissionControlTokenRefresher(
     services.GetRequiredService<IMissionControlSessionStore>()));
 builder.Services.AddHttpClient<MissionControlClient>(client =>
     client.BaseAddress = missionControlApiBaseAddress);
+builder.Services.AddScoped<AlertCounterState>();
 
 var app = builder.Build();
 

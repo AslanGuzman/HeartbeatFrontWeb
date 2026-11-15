@@ -1,0 +1,944 @@
+@page "/crew/{AstronautId:guid}"
+@implements IDisposable
+@using System.Globalization
+@using System.Net
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject MissionControlClient Client
+@inject MissionControlSession Session
+
+<PageTitle>Heartbeat | Detalle del astronauta</PageTitle>
+
+<RequirePermission Permission="@Permissions.CrewView">
+    <ChildContent>
+        @if (_loadingProfile)
+        {
+            <div class="crew-member-state" role="status" aria-busy="true">
+                <span class="session-spinner" aria-hidden="true"></span>
+                <span>Cargando perfil…</span>
+            </div>
+        }
+        else if (_profileForbidden)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>Sin permiso para ver este perfil</h1>
+                <p>Tu cuenta no tiene el permiso necesario.</p>
+            </div>
+        }
+        else if (_profileNotFound)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>Perfil no disponible</h1>
+                <p>No se encontró este astronauta.</p>
+                <a href="/crew">Volver a la tripulación</a>
+            </div>
+        }
+        else if (_profileError is not null)
+        {
+            <div class="crew-member-state" role="alert">
+                <h1>No se pudo cargar el perfil</h1>
+                <p>@_profileError</p>
+                <button class="crew-member-retry" type="button" @onclick="LoadPageAsync">Reintentar</button>
+            </div>
+        }
+        else if (_astronaut is not null)
+        {
+            <section class="astronaut-detail" aria-labelledby="astronaut-name">
+                <a class="crew-member-back" href="/crew">Volver a la tripulación</a>
+
+                <header class="astronaut-heading">
+                    <div>
+                        <h1 id="astronaut-name">@_astronaut.DisplayName</h1>
+                        <p>@(_astronaut.CallSign ?? "Sin indicativo") · @_astronaut.Mission.Name</p>
+                    </div>
+                    @if (_status is not null)
+                    {
+                        <span class="health-chip health-chip--@StatusKey(_status.OverallStatus)">
+                            @StatusLabel(_status.OverallStatus)
+                        </span>
+                    }
+                </header>
+
+                <section class="astronaut-profile" aria-label="Información del astronauta">
+                    <span class="astronaut-avatar" aria-hidden="true">@Initial(_astronaut.DisplayName)</span>
+                    <dl>
+                        <div>
+                            <dt>Entorno</dt>
+                            <dd>@_astronaut.Mission.Environment</dd>
+                        </div>
+                        <div>
+                            <dt>Inicio de misión</dt>
+                            <dd>@FormatTimestamp(_astronaut.Mission.StartsAt)</dd>
+                        </div>
+                        <div>
+                            <dt>Perfil actualizado</dt>
+                            <dd>@FormatTimestamp(_astronaut.UpdatedAt)</dd>
+                        </div>
+                    </dl>
+                </section>
+
+                <section class="vitals-section" aria-labelledby="vitals-title">
+                    <header class="section-heading">
+                        <div>
+                            <h2 id="vitals-title">Estado actual</h2>
+                            <p>
+                                @if (_status?.LastSyncAt is { } lastSync)
+                                {
+                                    <span>Última sincronización: @FormatTimestamp(lastSync)</span>
+                                }
+                                else
+                                {
+                                    <span>Sin chequeos sincronizados</span>
+                                }
+                            </p>
+                        </div>
+                    </header>
+
+                    @if (!Session.HasPermission(Permissions.VitalsView))
+                    {
+                        <div class="crew-member-state">
+                            <h3>Signos vitales no disponibles</h3>
+                            <p>Tu cuenta no tiene el permiso para consultar el estado clínico.</p>
+                        </div>
+                    }
+                    else if (_statusLoading)
+                    {
+                        <div class="crew-member-state" role="status" aria-busy="true">
+                            <span class="session-spinner" aria-hidden="true"></span>
+                            <span>Cargando indicadores…</span>
+                        </div>
+                    }
+                    else if (_statusForbidden)
+                    {
+                        <div class="crew-member-state" role="alert">
+                            <h3>Sin permiso para consultar los indicadores</h3>
+                            <p>Tu cuenta no tiene el permiso <code>vitals.view</code>.</p>
+                        </div>
+                    }
+                    else if (_statusError is not null)
+                    {
+                        <div class="crew-member-state" role="alert">
+                            <h3>No se pudieron cargar los indicadores</h3>
+                            <p>@_statusError</p>
+                            <button class="crew-member-retry" type="button" @onclick="LoadStatusAsync">Reintentar</button>
+                        </div>
+                    }
+                    else if (_status is not null)
+                    {
+                        @if (!string.IsNullOrWhiteSpace(GetReferenceRangesString("disclaimer")))
+                        {
+                            <p class="clinical-disclaimer">@GetReferenceRangesString("disclaimer")</p>
+                        }
+
+                        <div class="vitals-layout">
+                            <figure class="body-map-panel">
+                                <figcaption>
+                                    <strong>Mapa corporal</strong>
+                                    <span>Las zonas resumen los indicadores registrados.</span>
+                                </figcaption>
+                                @{
+                                    var headClass = StatusKey(RegionStatus("head"));
+                                    var heartClass = StatusKey(RegionStatus("heart"));
+                                    var abdomenClass = StatusKey(RegionStatus("abdomen"));
+                                }
+                                <svg class="body-map"
+                                     viewBox="0 0 220 400"
+                                     role="img"
+                                     aria-labelledby="body-map-title body-map-description">
+                                    <title id="body-map-title">Mapa corporal de indicadores</title>
+                                    <desc id="body-map-description">
+                                        La cabeza agrupa temperatura, sueño y ánimo; el pecho, presión arterial y frecuencia cardíaca; el abdomen, glucosa.
+                                    </desc>
+                                    <circle class="figure-part" cx="110" cy="42" r="23" />
+                                    <path class="figure-part" d="M101 65h18v18h-18z" />
+                                    <path class="figure-part"
+                                          d="M91 77c-11 1-19 7-25 17l20 17 5 40-7 34 8 12h36l8-12-7-34 5-40 20-17c-6-10-14-16-25-17-6 5-12 7-19 7s-13-2-19-7z" />
+                                    <path class="figure-part"
+                                          d="M67 91c-8 2-12 9-14 20l-10 65-12 82c-2 9 2 15 9 16 5 1 9-3 11-9l16-82 13-55 8-27z" />
+                                    <path class="figure-part"
+                                          d="M153 91c8 2 12 9 14 20l10 65 12 82c2 9-2 15-9 16-5 1-9-3-11-9l-16-82-13-55-8-27z" />
+                                    <path class="figure-part"
+                                          d="M91 201h38l7 25-8 24-3 124h-18l-7-109-7 109H75l-3-124-8-24 7-25z" />
+                                    <circle class="map-dot map-dot--@headClass" cx="110" cy="43" r="7" />
+                                    <circle class="map-dot map-dot--@heartClass" cx="110" cy="125" r="7" />
+                                    <circle class="map-dot map-dot--@abdomenClass" cx="110" cy="174" r="7" />
+                                </svg>
+                                <div class="map-legend" aria-label="Estados">
+                                    <span><i class="legend-dot legend-dot--normal"></i>Normal</span>
+                                    <span><i class="legend-dot legend-dot--watch"></i>Observación</span>
+                                    <span><i class="legend-dot legend-dot--critical"></i>Crítico</span>
+                                    <span><i class="legend-dot legend-dot--unknown"></i>Sin datos</span>
+                                </div>
+                            </figure>
+
+                            <div class="indicator-grid" aria-label="Seis indicadores actuales">
+                                @foreach (var indicatorType in Enum.GetValues<IndicatorType>())
+                                {
+                                    var indicatorStatus = CurrentIndicator(indicatorType);
+                                    var definition = FindIndicatorDefinition(indicatorType);
+                                    <article @key="indicatorType" class="indicator-card">
+                                        <header>
+                                            <div>
+                                                <h3>@IndicatorName(indicatorType, definition)</h3>
+                                                @if (indicatorStatus is not null)
+                                                {
+                                                    <span class="indicator-evaluation">@indicatorStatus.Label</span>
+                                                }
+                                            </div>
+                                            @if (indicatorStatus is not null)
+                                            {
+                                                <span class="health-chip health-chip--@StatusKey(indicatorStatus.Status)">
+                                                    @StatusLabel(indicatorStatus.Status)
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="health-chip health-chip--unknown">Sin registro</span>
+                                            }
+                                        </header>
+
+                                        <strong class="indicator-value">
+                                            @(indicatorStatus is null
+                                                ? "Sin registro"
+                                                : FormatIndicatorValue(indicatorStatus.Value, indicatorStatus.SecondaryValue, indicatorStatus.Unit))
+                                        </strong>
+                                        @if (indicatorStatus is not null)
+                                        {
+                                            <span class="indicator-recorded">Registrado: @FormatTimestamp(indicatorStatus.RecordedAt)</span>
+                                        }
+
+                                        @if (definition is { } indicatorDefinition)
+                                        {
+                                            <details class="indicator-reference">
+                                                <summary>Información y fuentes</summary>
+                                                @if (GetJsonString(indicatorDefinition, "whyItMatters") is { } why)
+                                                {
+                                                    <p>@why</p>
+                                                }
+                                                @if (GetJsonString(indicatorDefinition, "risks") is { } risks)
+                                                {
+                                                    <p><strong>Riesgos:</strong> @risks</p>
+                                                }
+                                                @if (GetJsonArray(indicatorDefinition, "howToMeasure") is { } measurementSteps)
+                                                {
+                                                    <strong>Cómo medir</strong>
+                                                    <ul>
+                                                        @foreach (var step in measurementSteps.EnumerateArray())
+                                                        {
+                                                            <li>@step.GetString()</li>
+                                                        }
+                                                    </ul>
+                                                }
+                                                <strong>Fuentes</strong>
+                                                <ul class="reference-sources">
+                                                    @foreach (var source in GetIndicatorSources(indicatorDefinition))
+                                                    {
+                                                        <li>
+                                                            <a href="@GetJsonString(source, "url")" target="_blank" rel="noopener noreferrer">
+                                                                @GetJsonString(source, "title")
+                                                            </a>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </details>
+                                        }
+                                        else if (_referenceRanges is null)
+                                        {
+                                            <span class="indicator-reference-pending">Catálogo de referencia no disponible.</span>
+                                        }
+                                    </article>
+                                }
+                            </div>
+                        </div>
+                    }
+                </section>
+
+                @if (_referenceLoading)
+                {
+                    <p class="reference-source-note" role="status">Cargando catálogo de rangos…</p>
+                }
+                else if (_referenceRangesFallback)
+                {
+                    <p class="reference-source-note" role="status">
+                        El endpoint de rangos no está disponible; se muestra el catálogo compartido v@ReferenceRangesVersion.
+                    </p>
+                }
+
+                @if (Session.HasPermission(Permissions.VitalsHistory))
+                {
+                    <section class="history-section" aria-labelledby="history-title">
+                        <header class="section-heading">
+                            <div>
+                                <h2 id="history-title">Historial de chequeos</h2>
+                                <p>Filtra los registros por fecha y estado.</p>
+                            </div>
+                        </header>
+
+                        <div class="history-filters">
+                            <label>
+                                Desde
+                                <input type="date" @bind="_historyFrom" />
+                            </label>
+                            <label>
+                                Hasta
+                                <input type="date" @bind="_historyTo" />
+                            </label>
+                            <label>
+                                Estado
+                                <select @bind="_historyStatus">
+                                    <option value="">Todos</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="watch">En observación</option>
+                                    <option value="critical">Crítico</option>
+                                </select>
+                            </label>
+                            <div class="history-filter-actions">
+                                <button class="crew-member-retry" type="button" @onclick="ApplyHistoryFiltersAsync">
+                                    Aplicar filtros
+                                </button>
+                                <button class="history-reset" type="button" @onclick="ResetHistoryFiltersAsync">
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+
+                        @if (_historyLoading)
+                        {
+                            <div class="crew-member-state" role="status" aria-busy="true">
+                                <span class="session-spinner" aria-hidden="true"></span>
+                                <span>Cargando historial…</span>
+                            </div>
+                        }
+                        else if (_historyError is not null)
+                        {
+                            <div class="crew-member-state" role="alert">
+                                <h3>No se pudo cargar el historial</h3>
+                                <p>@_historyError</p>
+                                <button class="crew-member-retry" type="button" @onclick="LoadHistoryAsync">Reintentar</button>
+                            </div>
+                        }
+                        else if (_history is null || _history.Items.Count == 0)
+                        {
+                            <div class="crew-member-state history-empty">
+                                <h3>No hay chequeos para estos filtros</h3>
+                                <p>Prueba otro rango de fechas o estado.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="history-table-wrap">
+                                <table class="history-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Fecha</th>
+                                            <th scope="col">Estado</th>
+                                            <th scope="col">Indicadores</th>
+                                            <th scope="col"><span class="visually-hidden">Acción</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var checkUp in _history.Items)
+                                        {
+                                            <tr @key="checkUp.Id">
+                                                <td data-label="Fecha">@FormatTimestamp(checkUp.RecordedAt)</td>
+                                                <td data-label="Estado">
+                                                    <span class="health-chip health-chip--@StatusKey(checkUp.OverallStatus)">
+                                                        @StatusLabel(checkUp.OverallStatus)
+                                                    </span>
+                                                </td>
+                                                <td data-label="Indicadores">@checkUp.Readings.Count</td>
+                                                <td class="history-action">
+                                                    @if (Session.HasPermission(Permissions.VitalsView))
+                                                    {
+                                                        <button type="button"
+                                                                class="history-detail-button"
+                                                                @onclick="() => LoadCheckUpDetailAsync(checkUp.Id)">
+                                                            Ver detalle
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="history-detail-unavailable">Detalle no disponible</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <nav class="history-pagination" aria-label="Páginas del historial">
+                                <span>@_history.Total registros · Página @_historyPage de @HistoryPageCount</span>
+                                <div>
+                                    <button type="button"
+                                            class="history-reset"
+                                            disabled="@(_historyPage <= 1 || _historyLoading)"
+                                            @onclick="PreviousHistoryPageAsync">
+                                        Anterior
+                                    </button>
+                                    <button type="button"
+                                            class="history-reset"
+                                            disabled="@(_historyPage >= HistoryPageCount || _historyLoading)"
+                                            @onclick="NextHistoryPageAsync">
+                                        Siguiente
+                                    </button>
+                                </div>
+                            </nav>
+                        }
+
+                        @if (_loadingCheckUpDetail)
+                        {
+                            <div class="crew-member-state" role="status" aria-busy="true">
+                                <span class="session-spinner" aria-hidden="true"></span>
+                                <span>Cargando detalle del chequeo…</span>
+                            </div>
+                        }
+                        else if (_checkUpDetailError is not null)
+                        {
+                            <div class="crew-member-state" role="alert">
+                                <h3>No se pudo cargar el detalle</h3>
+                                <p>@_checkUpDetailError</p>
+                            </div>
+                        }
+                        else if (_selectedCheckUp is not null)
+                        {
+                            <article class="checkup-detail" aria-labelledby="checkup-detail-title">
+                                <header class="section-heading">
+                                    <div>
+                                        <h2 id="checkup-detail-title">Detalle del chequeo</h2>
+                                        <p>@FormatTimestamp(_selectedCheckUp.RecordedAt)</p>
+                                    </div>
+                                    <span class="health-chip health-chip--@StatusKey(_selectedCheckUp.OverallStatus)">
+                                        @StatusLabel(_selectedCheckUp.OverallStatus)
+                                    </span>
+                                </header>
+                                @if (!string.IsNullOrWhiteSpace(_selectedCheckUp.Note))
+                                {
+                                    <p class="checkup-note">@_selectedCheckUp.Note</p>
+                                }
+                                <div class="evaluation-list">
+                                    @foreach (var evaluation in _selectedCheckUp.Evaluations)
+                                    {
+                                        var reading = _selectedCheckUp.Readings.FirstOrDefault(item => item.Indicator == evaluation.Indicator);
+                                        var definition = FindIndicatorDefinition(evaluation.Indicator);
+                                        <section class="evaluation-item">
+                                            <header>
+                                                <h3>@IndicatorName(evaluation.Indicator, definition)</h3>
+                                                <span class="health-chip health-chip--@StatusKey(evaluation.Status)">
+                                                    @StatusLabel(evaluation.Status)
+                                                </span>
+                                            </header>
+                                            @if (reading is not null)
+                                            {
+                                                <p class="evaluation-value">
+                                                    @FormatIndicatorValue(
+                                                        reading.Value,
+                                                        reading.SecondaryValue,
+                                                        GetJsonString(definition, "unit") ?? string.Empty)
+                                                    @if (evaluation.Label.Length > 0)
+                                                    {
+                                                        <span>· @evaluation.Label</span>
+                                                    }
+                                                </p>
+                                            }
+                                            @if (evaluation.Guidance.Count > 0)
+                                            {
+                                                <strong>Guía</strong>
+                                                <ul>
+                                                    @foreach (var guidance in evaluation.Guidance)
+                                                    {
+                                                        <li>@guidance</li>
+                                                    }
+                                                </ul>
+                                            }
+                                            @if (evaluation.Escalation is not null)
+                                            {
+                                                <p class="evaluation-escalation">
+                                                    @evaluation.Escalation.Message
+                                                </p>
+                                            }
+                                            @if (evaluation.Sources.Count > 0)
+                                            {
+                                                <strong>Fuentes</strong>
+                                                <ul class="reference-sources">
+                                                    @foreach (var source in evaluation.Sources)
+                                                    {
+                                                        <li><a href="@source.Url" target="_blank" rel="noopener noreferrer">@source.Title</a></li>
+                                                    }
+                                                </ul>
+                                            }
+                                        </section>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </section>
+                }
+
+            </section>
+        }
+    </ChildContent>
+    <NotAuthorized>
+        <div class="crew-member-state" role="alert">
+            <h1>Sin permiso para ver este perfil</h1>
+            <p>Tu cuenta no tiene el permiso necesario.</p>
+        </div>
+    </NotAuthorized>
+</RequirePermission>
+
+@code {
+    private const int HistoryPageSize = 20;
+
+    [Parameter]
+    public Guid AstronautId { get; set; }
+
+    private AstronautProfile? _astronaut;
+    private AstronautStatusDto? _status;
+    private Paged<CheckUpDto>? _history;
+    private CheckUpDetailDto? _selectedCheckUp;
+    private JsonDocument? _referenceRanges;
+    private bool _loadingProfile = true;
+    private bool _profileForbidden;
+    private bool _profileNotFound;
+    private string? _profileError;
+    private bool _statusLoading;
+    private bool _statusForbidden;
+    private string? _statusError;
+    private bool _historyLoading;
+    private string? _historyError;
+    private bool _loadingCheckUpDetail;
+    private string? _checkUpDetailError;
+    private bool _referenceLoading;
+    private bool _referenceRangesFallback;
+    private DateTime? _historyFrom;
+    private DateTime? _historyTo;
+    private string _historyStatus = string.Empty;
+    private int _historyPage = 1;
+
+    private int HistoryPageCount =>
+        _history is null ? 1 : Math.Max(1, (int)Math.Ceiling((double)_history.Total / HistoryPageSize));
+
+    protected override Task OnParametersSetAsync() => LoadPageAsync();
+
+    private async Task LoadPageAsync()
+    {
+        ResetPage();
+        if (!Session.HasPermission(Permissions.CrewView))
+        {
+            _loadingProfile = false;
+            return;
+        }
+
+        await LoadProfileAsync();
+        if (_astronaut is null)
+        {
+            return;
+        }
+
+        var tasks = new List<Task> { LoadReferenceRangesAsync() };
+        if (Session.HasPermission(Permissions.VitalsView))
+        {
+            tasks.Add(LoadStatusAsync());
+        }
+
+        if (Session.HasPermission(Permissions.VitalsHistory))
+        {
+            tasks.Add(LoadHistoryAsync());
+        }
+
+        await Task.WhenAll(tasks);
+    }
+
+    private void ResetPage()
+    {
+        _astronaut = null;
+        _status = null;
+        _history = null;
+        _selectedCheckUp = null;
+        _referenceRanges?.Dispose();
+        _referenceRanges = null;
+        _loadingProfile = true;
+        _profileForbidden = false;
+        _profileNotFound = false;
+        _profileError = null;
+        _statusLoading = false;
+        _statusForbidden = false;
+        _statusError = null;
+        _historyLoading = false;
+        _historyError = null;
+        _loadingCheckUpDetail = false;
+        _checkUpDetailError = null;
+        _referenceLoading = false;
+        _referenceRangesFallback = false;
+        _historyFrom = null;
+        _historyTo = null;
+        _historyStatus = string.Empty;
+        _historyPage = 1;
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        _loadingProfile = true;
+        _profileForbidden = false;
+        _profileNotFound = false;
+        _profileError = null;
+
+        try
+        {
+            _astronaut = await Client.GetCrewMemberAsync(AstronautId);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _profileForbidden = true;
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _profileNotFound = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _profileError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loadingProfile = false;
+        }
+    }
+
+    private async Task LoadStatusAsync()
+    {
+        _statusLoading = true;
+        _statusForbidden = false;
+        _statusError = null;
+
+        try
+        {
+            _status = await Client.GetAstronautStatusAsync(AstronautId);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _statusForbidden = true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _statusError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _statusLoading = false;
+        }
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        if (!Session.HasPermission(Permissions.VitalsHistory))
+        {
+            return;
+        }
+
+        _historyLoading = true;
+        _historyError = null;
+        _selectedCheckUp = null;
+        _checkUpDetailError = null;
+
+        try
+        {
+            if (_historyFrom.HasValue && _historyTo.HasValue &&
+                _historyFrom.Value.Date > _historyTo.Value.Date)
+            {
+                _historyError = "La fecha inicial debe ser anterior a la fecha final.";
+                return;
+            }
+
+            HealthStatus? status = Enum.TryParse<HealthStatus>(_historyStatus, true, out var parsedStatus)
+                ? parsedStatus
+                : null;
+
+            _history = await Client.GetCheckUpsAsync(
+                AstronautId,
+                StartOfDay(_historyFrom),
+                EndOfDay(_historyTo),
+                status,
+                _historyPage,
+                HistoryPageSize);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _history = null;
+            _historyError = "Tu cuenta ya no tiene el permiso para consultar el historial.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _history = null;
+            _historyError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _historyLoading = false;
+        }
+    }
+
+    private async Task ApplyHistoryFiltersAsync()
+    {
+        _historyPage = 1;
+        await LoadHistoryAsync();
+    }
+
+    private async Task ResetHistoryFiltersAsync()
+    {
+        _historyFrom = null;
+        _historyTo = null;
+        _historyStatus = string.Empty;
+        _historyPage = 1;
+        await LoadHistoryAsync();
+    }
+
+    private async Task PreviousHistoryPageAsync()
+    {
+        if (_historyPage > 1)
+        {
+            _historyPage--;
+            await LoadHistoryAsync();
+        }
+    }
+
+    private async Task NextHistoryPageAsync()
+    {
+        if (_historyPage < HistoryPageCount)
+        {
+            _historyPage++;
+            await LoadHistoryAsync();
+        }
+    }
+
+    private async Task LoadCheckUpDetailAsync(Guid checkUpId)
+    {
+        if (!Session.HasPermission(Permissions.VitalsView))
+        {
+            return;
+        }
+
+        _loadingCheckUpDetail = true;
+        _selectedCheckUp = null;
+        _checkUpDetailError = null;
+
+        try
+        {
+            _selectedCheckUp = await Client.GetCheckUpDetailAsync(AstronautId, checkUpId);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.Forbidden)
+        {
+            _checkUpDetailError = "Tu cuenta no tiene el permiso vitals.view para abrir el detalle.";
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            _checkUpDetailError = "El chequeo ya no está disponible.";
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _checkUpDetailError = "Comprueba la conexión e inténtalo de nuevo.";
+        }
+        finally
+        {
+            _loadingCheckUpDetail = false;
+        }
+    }
+
+    private async Task LoadReferenceRangesAsync()
+    {
+        _referenceLoading = true;
+        _referenceRangesFallback = false;
+
+        try
+        {
+            _referenceRanges = await Client.GetReferenceRangesAsync();
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or
+                JsonException or
+                InvalidDataException or
+                TaskCanceledException)
+        {
+            _referenceRanges?.Dispose();
+            _referenceRanges = JsonDocument.Parse(ReferenceRanges.Json);
+            _referenceRangesFallback = true;
+        }
+        finally
+        {
+            _referenceLoading = false;
+        }
+    }
+
+    private static DateTimeOffset? StartOfDay(DateTime? date) =>
+        date is null
+            ? null
+            : new DateTimeOffset(DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Local));
+
+    private static DateTimeOffset? EndOfDay(DateTime? date) =>
+        date is null
+            ? null
+            : new DateTimeOffset(DateTime.SpecifyKind(
+                date.Value.Date.AddDays(1).AddTicks(-1),
+                DateTimeKind.Local));
+
+    private IndicatorStatusDto? CurrentIndicator(IndicatorType indicator) =>
+        _status?.Indicators.FirstOrDefault(item => item.Indicator == indicator);
+
+    private HealthStatus? RegionStatus(string region)
+    {
+        var statuses = Enum.GetValues<IndicatorType>()
+            .Where(indicator => string.Equals(
+                GetJsonString(FindIndicatorDefinition(indicator), "bodyRegion"),
+                region,
+                StringComparison.Ordinal))
+            .Select(indicator => CurrentIndicator(indicator)?.Status)
+            .Where(status => status is not null)
+            .ToArray();
+
+        if (statuses.Contains(HealthStatus.Critical))
+        {
+            return HealthStatus.Critical;
+        }
+
+        return statuses.Contains(HealthStatus.Watch)
+            ? HealthStatus.Watch
+            : statuses.Contains(HealthStatus.Normal)
+                ? HealthStatus.Normal
+                : null;
+    }
+
+    private JsonElement? FindIndicatorDefinition(IndicatorType indicator)
+    {
+        if (_referenceRanges is null ||
+            !_referenceRanges.RootElement.TryGetProperty("indicators", out var indicators))
+        {
+            return null;
+        }
+
+        var indicatorId = JsonNamingPolicy.CamelCase.ConvertName(indicator.ToString());
+        foreach (var definition in indicators.EnumerateArray())
+        {
+            if (string.Equals(
+                GetJsonString(definition, "id"),
+                indicatorId,
+                StringComparison.Ordinal))
+            {
+                return definition;
+            }
+        }
+
+        return null;
+    }
+
+    private IReadOnlyList<JsonElement> GetIndicatorSources(JsonElement definition)
+    {
+        var sources = new List<JsonElement>();
+        if (_referenceRanges is null ||
+            !_referenceRanges.RootElement.TryGetProperty("sources", out var sourceCatalog) ||
+            !definition.TryGetProperty("sources", out var sourceIds))
+        {
+            return sources;
+        }
+
+        foreach (var sourceId in sourceIds.EnumerateArray())
+        {
+            if (sourceId.GetString() is { } id &&
+                sourceCatalog.TryGetProperty(id, out var source))
+            {
+                sources.Add(source);
+            }
+        }
+
+        return sources;
+    }
+
+    private string? GetReferenceRangesString(string property) =>
+        _referenceRanges is not null
+            ? GetJsonString(_referenceRanges.RootElement, property)
+            : null;
+
+    private string ReferenceRangesVersion =>
+        GetReferenceRangesString("version") ?? "desconocida";
+
+    private static JsonElement? GetJsonArray(JsonElement element, string property) =>
+        element.ValueKind == JsonValueKind.Object &&
+        element.TryGetProperty(property, out var value) &&
+        value.ValueKind == JsonValueKind.Array
+            ? value
+            : null;
+
+    private static string? GetJsonString(JsonElement? element, string property) =>
+        element is { ValueKind: JsonValueKind.Object } value
+            ? GetJsonString(value, property)
+            : null;
+
+    private static string? GetJsonString(JsonElement element, string property) =>
+        element.ValueKind == JsonValueKind.Object &&
+        element.TryGetProperty(property, out var value) &&
+        value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static string IndicatorName(IndicatorType indicator, JsonElement? definition) =>
+        indicator switch
+        {
+            IndicatorType.BloodPressure => "Presión arterial",
+            IndicatorType.HeartRate => "Frecuencia cardíaca",
+            IndicatorType.BloodSugar => "Glucosa en sangre",
+            IndicatorType.BodyTemperature => "Temperatura corporal",
+            IndicatorType.Sleep => "Sueño",
+            IndicatorType.Mood => "Estado de ánimo",
+            _ => GetJsonString(definition, "name") ?? indicator.ToString()
+        };
+
+    private static string FormatIndicatorValue(decimal value, decimal? secondaryValue, string unit)
+    {
+        var primary = value.ToString("0.##", CultureInfo.CurrentCulture);
+        return secondaryValue is null
+            ? $"{primary} {unit}".Trim()
+            : $"{primary}/{secondaryValue.Value.ToString("0.##", CultureInfo.CurrentCulture)} {unit}".Trim();
+    }
+
+    private static string StatusKey(HealthStatus? status) => status switch
+    {
+        HealthStatus.Normal => "normal",
+        HealthStatus.Watch => "watch",
+        HealthStatus.Critical => "critical",
+        _ => "unknown"
+    };
+
+    private static string StatusLabel(HealthStatus? status) => status switch
+    {
+        HealthStatus.Normal => "Normal",
+        HealthStatus.Watch => "En observación",
+        HealthStatus.Critical => "Crítico",
+        _ => "Sin datos"
+    };
+
+    private static string Initial(string displayName) =>
+        string.IsNullOrWhiteSpace(displayName) ? "?" : displayName.Trim()[0].ToString().ToUpperInvariant();
+
+    private static string FormatTimestamp(DateTimeOffset timestamp) =>
+        timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture);
+
+    public void Dispose()
+    {
+        _referenceRanges?.Dispose();
+    }
+}

@@ -1,0 +1,182 @@
+.charts-page {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.charts-heading h1 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: clamp(1.8rem, 4vw, 2.3rem);
+    letter-spacing: -0.025em;
+}
+
+.charts-heading p {
+    margin: 0.45rem 0 0;
+    color: var(--text-secondary);
+}
+
+.charts-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.charts-astronaut {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 650;
+}
+
+.charts-astronaut select {
+    min-width: 16rem;
+    min-height: 2.4rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 0.9rem;
+}
+
+.charts-ranges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.charts-range {
+    min-height: 2.4rem;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--brand-blue);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.charts-range--active {
+    border-color: var(--brand-blue);
+    background: var(--brand-blue);
+    color: #FFFFFF;
+}
+
+.charts-range:disabled,
+.charts-astronaut select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.charts-context {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.charts-state {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.charts-state h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 1.05rem;
+}
+
+.charts-state p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.charts-button {
+    min-height: 2.4rem;
+    width: fit-content;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--brand-blue);
+    border-radius: 0.5rem;
+    background: var(--brand-blue);
+    color: #FFFFFF;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: 1rem;
+}
+
+.chart-card {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: var(--surface);
+}
+
+.chart-card header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.chart-card h2 {
+    margin: 0;
+    color: var(--brand-blue);
+    font-size: 0.95rem;
+}
+
+.chart-unit {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.chart-frame {
+    position: relative;
+    height: 14rem;
+}
+
+.chart-frame canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.chart-empty {
+    display: grid;
+    place-items: center;
+    min-height: 14rem;
+    margin: 0;
+    border: 1px dashed var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+@media (max-width: 42rem) {
+    .charts-controls {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .charts-astronaut select {
+        width: 100%;
+        min-width: 0;
+    }
+}
